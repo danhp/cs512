@@ -1,0 +1,7 @@
+build/
+webapps/
+
+.DS_Store
+
+*.class
+*.jar
