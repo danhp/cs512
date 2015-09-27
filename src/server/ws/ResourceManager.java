@@ -9,15 +9,15 @@ import javax.jws.WebMethod;
  * Created by justindomingue on 15-09-27.
  */
 
-@WebService
+//@WebService
 public interface ResourceManager {
 
-    @WebMethod
+//    @WebMethod
     ReservableItem getItem(int key);
 
-    @WebMethod
+//    @WebMethod
     boolean addItem(int key, ReservableItem item);
 
-    @WebMethod
+//    @WebMethod
     boolean removeItem(int key);
 }

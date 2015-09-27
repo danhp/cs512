@@ -8,7 +8,7 @@ import java.util.Map;
  * Created by justindomingue on 15-09-27.
  */
 
-@WebService(endpointInterface = "server.ws.ResourceManager")
+//@WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
     private Map<Integer, ReservableItem> map;
 

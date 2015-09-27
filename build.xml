@@ -1,7 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="help" name="project">
 
-    <property name="service.name" value="rm"/>
+    <property name="service.name" value="middleware"/>
     <property name="service.host" value="localhost"/>
     <property name="service.port" value="8080"/>
 
