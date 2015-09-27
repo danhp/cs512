@@ -23,10 +23,23 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public boolean addItem(int key, ReservableItem item) {
-        if (map.containsKey(key)) { return false; }
+        ReservableItem ret;
 
-        map.put(key, item);
-        return true;
+        // Item already in db - update
+        if (map.containsKey(key)) {
+            ReservableItem saved = map.get(key);
+            saved.setCount(saved.getCount() + item.getCount());
+            if (item.getPrice() > 0) {
+                saved.setPrice(item.getPrice());
+            }
+            ret = map.put(key, saved);
+
+        // Item not in db - create
+        } else {
+            ret = map.put(key, item);
+        }
+
+        return ret != null;
     }
 
     @Override

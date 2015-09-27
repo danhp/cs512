@@ -5,6 +5,8 @@
 
 package server;
 
+import server.ws.ResourceManager;
+
 import java.util.*;
 import javax.jws.WebService;
 
@@ -14,6 +16,13 @@ public class MiddlewareImpl implements server.ws.Middleware {
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
+    protected Map<String, ResourceManager> rmMap = new HashMap<String, ResourceManager>();
+
+    public MiddlewareImpl() {
+        rmMap.put("Car", new ResourceManagerImpl());
+        rmMap.put("Flight", new ResourceManagerImpl());
+        rmMap.put("Room", new ResourceManagerImpl());
+    }
 
     // Basic operations on RMItem //
 
@@ -39,9 +48,9 @@ public class MiddlewareImpl implements server.ws.Middleware {
     }
 
 
-    // Basic operations on ReservableItem //
+//     Basic operations on ReservableItem //
 
-    // Delete the entire item.
+//     Delete the entire item.
     protected boolean deleteItem(int id, String key) {
         Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
         ReservableItem curObj = (ReservableItem) readData(id, key);
@@ -137,24 +146,13 @@ public class MiddlewareImpl implements server.ws.Middleware {
                              int numSeats, int flightPrice) {
         Trace.info("RM::addFlight(" + id + ", " + flightNumber
                 + ", $" + flightPrice + ", " + numSeats + ") called.");
-        Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
-        if (curObj == null) {
-            // Doesn't exist; add it.
-            Flight newObj = new Flight(flightNumber, numSeats, flightPrice);
-            writeData(id, newObj.getKey(), newObj);
-            Trace.info("RM::addFlight(" + id + ", " + flightNumber
+
+        // Get the RM in charge of flights
+        boolean result = rmMap.get("Flight").addItem(id, new Flight(flightNumber, numSeats, flightPrice));
+
+        Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK.");
-        } else {
-            // Add seats to existing flight and update the price.
-            curObj.setCount(curObj.getCount() + numSeats);
-            if (flightPrice > 0) {
-                curObj.setPrice(flightPrice);
-            }
-            writeData(id, curObj.getKey(), curObj);
-            Trace.info("RM::addFlight(" + id + ", " + flightNumber
-                    + ", $" + flightPrice + ", " + numSeats + ") OK: "
-                    + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
-        }
+
         return(true);
     }
 
@@ -166,14 +164,20 @@ public class MiddlewareImpl implements server.ws.Middleware {
     // Returns the number of empty seats on this flight.
     @Override
     public int queryFlight(int id, int flightNumber) {
-        return queryNum(id, Flight.getKey(flightNumber));
+        ReservableItem flight = rmMap.get("Flight").getItem(id);
+
+        return flight.getCount() - flight.getReserved();
     }
 
     // Returns price of this flight.
     public int queryFlightPrice(int id, int flightNumber) {
-        return queryPrice(id, Flight.getKey(flightNumber));
+        return queryItemPrice(id, flightNumber, "Flight");
     }
 
+    // Generic methods
+    private int queryItemPrice(int id, int location, String type) {
+        return rmMap.get(type).getItem(id).getPrice();
+    }
     /*
     // Returns the number of reservations for this flight.
     public int queryFlightReservations(int id, int flightNumber) {
