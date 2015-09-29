@@ -10,19 +10,19 @@ import java.util.Map;
 
 //@WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
-    private Map<Integer, ReservableItem> map;
+    private Map<String, ReservableItem> map;
 
     public ResourceManagerImpl() {
-        map = new HashMap<Integer, ReservableItem>();
+        map = new HashMap<String, ReservableItem>();
     }
 
-    @Override
-    public ReservableItem getItem(int key) {
+    public synchronized ReservableItem getItem(int id, String key) {
         return map.get(key);
     }
 
     @Override
-    public boolean addItem(int key, ReservableItem item) {
+    public synchronized boolean addItem(int id, ReservableItem item) {
+        String key = item.getKey();
         ReservableItem ret;
 
         // Item already in db - update
@@ -43,7 +43,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public boolean removeItem(int key) {
+    public synchronized boolean removeItem(int id, String key) {
         return map.remove(key) == null;
     }
 }

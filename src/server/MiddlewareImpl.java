@@ -10,88 +10,81 @@ import server.ws.ResourceManager;
 import java.util.*;
 import javax.jws.WebService;
 
-
 @WebService(endpointInterface = "server.ws.Middleware")
 public class MiddlewareImpl implements server.ws.Middleware {
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
-    protected Map<String, ResourceManager> rmMap = new HashMap<String, ResourceManager>();
+    protected Map<RMType, ResourceManager> rmMap = new HashMap<RMType, ResourceManager>();
 
     public MiddlewareImpl() {
-        rmMap.put("Car", new ResourceManagerImpl());
-        rmMap.put("Flight", new ResourceManagerImpl());
-        rmMap.put("Room", new ResourceManagerImpl());
+        rmMap.put(RMType.Car, new ResourceManagerImpl());
+        rmMap.put(RMType.Flight, new ResourceManagerImpl());
+        rmMap.put(RMType.Room, new ResourceManagerImpl());
     }
-
-    // Basic operations on RMItem //
-
-    // Read a data item.
-    private RMItem readData(int id, String key) {
-        synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.get(key);
-        }
-    }
-
-    // Write a data item.
-    private void writeData(int id, String key, RMItem value) {
-        synchronized(m_itemHT) {
-            m_itemHT.put(key, value);
-        }
-    }
-
-    // Remove the item out of storage.
-    protected RMItem removeData(int id, String key) {
-        synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.remove(key);
-        }
-    }
-
 
 //     Basic operations on ReservableItem //
 
-//     Delete the entire item.
-    protected boolean deleteItem(int id, String key) {
-        Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
-        ReservableItem curObj = (ReservableItem) readData(id, key);
-        // Check if there is such an item in the storage.
-        if (curObj == null) {
-            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: "
-                    + " item doesn't exist.");
-            return false;
+    private ReservableItem getItem(int id, RMType type, String key) {
+        return rmMap.get(type).getItem(id, key);
+    }
+
+    private boolean addItem(int id, RMType type, ReservableItem item) {
+        Trace.info("RM::addFlight(" + id + ", " + item.getKey()
+                + ", $" + item.getPrice() + ", " + item.getCount() + ") called.");
+
+        // Get the RM in charge of flights
+        boolean result = rmMap.get(type).addItem(id, item);
+
+        if (result) {
+            Trace.info("RM::add" + type.name() + (" + id + ", " + item.getKey()"
+                    + ", $" + item.getPrice() + ", " + item.getCount() + ") OK.");
         } else {
-            if (curObj.getReserved() == 0) {
-                removeData(id, curObj.getKey());
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
-                return true;
-            }
-            else {
-                Trace.info("RM::deleteItem(" + id + ", " + key + ") failed: "
-                        + "some customers have reserved it.");
-                return false;
-            }
+            Trace.warn("RM::add" + type.name() + (" + id + ", " + item.getKey()"
+                    + ", $" + item.getPrice() + ", " + item.getCount() + ") FAILED.");
         }
+
+        return result;
+    }
+
+//     Delete the entire item.
+    protected boolean deleteItem(int id, RMType type, String key) {
+        Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
+
+        boolean result = rmMap.get(type).removeItem(id, key);
+        if (result) {
+            Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
+        } else {
+            Trace.warn("RM::deleteItem(" + id + ", " + key + ") failed: "
+                    + " item doesn't exist."
+                    + "some customers have reserved it.");
+        }
+
+        return result;
+
     }
 
     // Query the number of available seats/rooms/cars.
-    protected int queryNum(int id, String key) {
+    protected int queryNum(int id, RMType type, String key) {
         Trace.info("RM::queryNum(" + id + ", " + key + ") called.");
-        ReservableItem curObj = (ReservableItem) readData(id, key);
+
+        ReservableItem item = getItem(id, type, key);
+
         int value = 0;
-        if (curObj != null) {
-            value = curObj.getCount();
+        if (item != null) {
+            value = item.getCount();
         }
         Trace.info("RM::queryNum(" + id + ", " + key + ") OK: " + value);
         return value;
     }
 
     // Query the price of an item.
-    protected int queryPrice(int id, String key) {
+    protected int queryPrice(int id, RMType type, String key) {
         Trace.info("RM::queryCarsPrice(" + id + ", " + key + ") called.");
-        ReservableItem curObj = (ReservableItem) readData(id, key);
+        ReservableItem item = getItem(id, type, key);
         int value = 0;
-        if (curObj != null) {
-            value = curObj.getPrice();
+        if (item != null) {
+            value = item.getPrice();
         }
         Trace.info("RM::queryCarsPrice(" + id + ", " + key + ") OK: $" + value);
         return value;
@@ -135,7 +128,6 @@ public class MiddlewareImpl implements server.ws.Middleware {
         }
     }
 
-
     // Flight operations //
 
     // Create a new flight, or add seats to existing flight.
@@ -144,40 +136,80 @@ public class MiddlewareImpl implements server.ws.Middleware {
     @Override
     public boolean addFlight(int id, int flightNumber,
                              int numSeats, int flightPrice) {
-        Trace.info("RM::addFlight(" + id + ", " + flightNumber
-                + ", $" + flightPrice + ", " + numSeats + ") called.");
-
-        // Get the RM in charge of flights
-        boolean result = rmMap.get("Flight").addItem(id, new Flight(flightNumber, numSeats, flightPrice));
-
-        Trace.info("RM::addFlight(" + id + ", " + flightNumber
-                    + ", $" + flightPrice + ", " + numSeats + ") OK.");
-
-        return(true);
+        return addItem(id, RMType.Flight, new Flight(flightNumber, numSeats, flightPrice));
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
-        return deleteItem(id, Flight.getKey(flightNumber));
+        return deleteItem(id, RMType.Flight, Flight.getKey(flightNumber));
     }
 
     // Returns the number of empty seats on this flight.
     @Override
     public int queryFlight(int id, int flightNumber) {
-        ReservableItem flight = rmMap.get("Flight").getItem(id);
-
+        ReservableItem flight = getItem(id, RMType.Flight, Flight.getKey(flightNumber));
         return flight.getCount() - flight.getReserved();
     }
 
     // Returns price of this flight.
     public int queryFlightPrice(int id, int flightNumber) {
-        return queryItemPrice(id, flightNumber, "Flight");
+        return queryPrice(id, RMType.Flight, Flight.getKey(flightNumber));
     }
 
-    // Generic methods
-    private int queryItemPrice(int id, int location, String type) {
-        return rmMap.get(type).getItem(id).getPrice();
+    // Car operations //
+
+    // Create a new car, or add seats to existing car.
+    // Note: if carPrice <= 0 and the car already exists, it maintains
+    // its current price.
+    @Override
+    public boolean addCars(int id, String location, int numCars, int carPrice) {
+        return addItem(id, RMType.Car, new Car(location, numCars, carPrice));
     }
+
+    @Override
+    public boolean deleteCars(int id, String location) {
+        return deleteItem(id, RMType.Car, Car.getKey(location));
+    }
+
+    // Returns the number of empty seats on this car.
+    @Override
+    public int queryCars(int id, String location) {
+        ReservableItem car = getItem(id, RMType.Car, Car.getKey(location));
+        return car.getCount() - car.getReserved();
+    }
+
+    // Returns price of this car.
+    public int queryCarsPrice(int id, String location) {
+        return queryPrice(id, RMType.Car, Car.getKey(location));
+    }
+
+    // Room operations //
+
+    // Create a new room, or add seats to existing room.
+    // Note: if roomPrice <= 0 and the room already exists, it maintains
+    // its current price.
+    @Override
+    public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        return addItem(id, RMType.Room, new Room(location, numRooms, roomPrice));
+    }
+
+    @Override
+    public boolean deleteRooms(int id, String location) {
+        return deleteItem(id, RMType.Room, Room.getKey(location));
+    }
+
+    // Returns the number of empty seats on this room.
+    @Override
+    public int queryRooms(int id, String location) {
+        ReservableItem room = getItem(id, RMType.Room, Room.getKey(location));
+        return room.getCount() - room.getReserved();
+    }
+
+    // Returns price of this room.
+    public int queryRoomsPrice(int id, String location) {
+        return queryPrice(id, RMType.Room, Room.getKey(location));
+    }
+
     /*
     // Returns the number of reservations for this flight.
     public int queryFlightReservations(int id, int flightNumber) {
@@ -213,105 +245,6 @@ public class MiddlewareImpl implements server.ws.Middleware {
         return true;
     }
     */
-
-
-    // Car operations //
-
-    // Create a new car location or add cars to an existing location.
-    // Note: if price <= 0 and the car location already exists, it maintains
-    // its current price.
-    @Override
-    public boolean addCars(int id, String location, int numCars, int carPrice) {
-        Trace.info("RM::addCars(" + id + ", " + location + ", "
-                + numCars + ", $" + carPrice + ") called.");
-        Car curObj = (Car) readData(id, Car.getKey(location));
-        if (curObj == null) {
-            // Doesn't exist; add it.
-            Car newObj = new Car(location, numCars, carPrice);
-            writeData(id, newObj.getKey(), newObj);
-            Trace.info("RM::addCars(" + id + ", " + location + ", "
-                    + numCars + ", $" + carPrice + ") OK.");
-        } else {
-            // Add count to existing object and update price.
-            curObj.setCount(curObj.getCount() + numCars);
-            if (carPrice > 0) {
-                curObj.setPrice(carPrice);
-            }
-            writeData(id, curObj.getKey(), curObj);
-            Trace.info("RM::addCars(" + id + ", " + location + ", "
-                    + numCars + ", $" + carPrice + ") OK: "
-                    + "cars = " + curObj.getCount() + ", price = $" + carPrice);
-        }
-        return(true);
-    }
-
-    // Delete cars from a location.
-    @Override
-    public boolean deleteCars(int id, String location) {
-        return deleteItem(id, Car.getKey(location));
-    }
-
-    // Returns the number of cars available at a location.
-    @Override
-    public int queryCars(int id, String location) {
-        return queryNum(id, Car.getKey(location));
-    }
-
-    // Returns price of cars at this location.
-    @Override
-    public int queryCarsPrice(int id, String location) {
-        return queryPrice(id, Car.getKey(location));
-    }
-
-
-    // Room operations //
-
-    // Create a new room location or add rooms to an existing location.
-    // Note: if price <= 0 and the room location already exists, it maintains
-    // its current price.
-    @Override
-    public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-        Trace.info("RM::addRooms(" + id + ", " + location + ", "
-                + numRooms + ", $" + roomPrice + ") called.");
-        Room curObj = (Room) readData(id, Room.getKey(location));
-        if (curObj == null) {
-            // Doesn't exist; add it.
-            Room newObj = new Room(location, numRooms, roomPrice);
-            writeData(id, newObj.getKey(), newObj);
-            Trace.info("RM::addRooms(" + id + ", " + location + ", "
-                    + numRooms + ", $" + roomPrice + ") OK.");
-        } else {
-            // Add count to existing object and update price.
-            curObj.setCount(curObj.getCount() + numRooms);
-            if (roomPrice > 0) {
-                curObj.setPrice(roomPrice);
-            }
-            writeData(id, curObj.getKey(), curObj);
-            Trace.info("RM::addRooms(" + id + ", " + location + ", "
-                    + numRooms + ", $" + roomPrice + ") OK: "
-                    + "rooms = " + curObj.getCount() + ", price = $" + roomPrice);
-        }
-        return(true);
-    }
-
-    // Delete rooms from a location.
-    @Override
-    public boolean deleteRooms(int id, String location) {
-        return deleteItem(id, Room.getKey(location));
-    }
-
-    // Returns the number of rooms available at a location.
-    @Override
-    public int queryRooms(int id, String location) {
-        return queryNum(id, Room.getKey(location));
-    }
-
-    // Returns room price at this location.
-    @Override
-    public int queryRoomsPrice(int id, String location) {
-        return queryPrice(id, Room.getKey(location));
-    }
-
 
     // Customer operations //
 

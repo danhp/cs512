@@ -13,11 +13,11 @@ import javax.jws.WebMethod;
 public interface ResourceManager {
 
 //    @WebMethod
-    ReservableItem getItem(int key);
+    ReservableItem getItem(int id, String key);
 
 //    @WebMethod
-    boolean addItem(int key, ReservableItem item);
+    boolean addItem(int id, ReservableItem item);
 
 //    @WebMethod
-    boolean removeItem(int key);
+    boolean removeItem(int id, String key);
 }
