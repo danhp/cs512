@@ -13,20 +13,19 @@ import javax.jws.WebService;
 @WebService(endpointInterface = "server.ws.Middleware")
 public class MiddlewareImpl implements server.ws.Middleware {
 
-    protected RMHashtable m_itemHT = new RMHashtable();
-
-    protected Map<RMType, ResourceManager> rmMap = new HashMap<RMType, ResourceManager>();
+    protected Map<RMType, ResourceManager> rms = new HashMap<RMType, ResourceManager>();
+    protected Map<String, Customer> customers = new HashMap<String, Customer>();
 
     public MiddlewareImpl() {
-        rmMap.put(RMType.Car, new ResourceManagerImpl());
-        rmMap.put(RMType.Flight, new ResourceManagerImpl());
-        rmMap.put(RMType.Room, new ResourceManagerImpl());
+        rms.put(RMType.Car, new ResourceManagerImpl());
+        rms.put(RMType.Flight, new ResourceManagerImpl());
+        rms.put(RMType.Room, new ResourceManagerImpl());
     }
 
 //     Basic operations on ReservableItem //
 
     private ReservableItem getItem(int id, RMType type, String key) {
-        return rmMap.get(type).getItem(id, key);
+        return rms.get(type).getItem(id, key);
     }
 
     private boolean addItem(int id, RMType type, ReservableItem item) {
@@ -34,7 +33,7 @@ public class MiddlewareImpl implements server.ws.Middleware {
                 + ", $" + item.getPrice() + ", " + item.getCount() + ") called.");
 
         // Get the RM in charge of flights
-        boolean result = rmMap.get(type).addItem(id, item);
+        boolean result = rms.get(type).addItem(id, item);
 
         if (result) {
             Trace.info("RM::add" + type.name() + " " + id + ", " + item.getKey()
@@ -51,7 +50,7 @@ public class MiddlewareImpl implements server.ws.Middleware {
     protected boolean deleteItem(int id, RMType type, String key) {
         Trace.info("RM::deleteItem(" + id + ", " + key + ") called.");
 
-        boolean result = rmMap.get(type).removeItem(id, key);
+        boolean result = rms.get(type).removeItem(id, key);
         if (result) {
             Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
         } else {
@@ -251,41 +250,40 @@ public class MiddlewareImpl implements server.ws.Middleware {
 
     @Override
     public int newCustomer(int id) {
-//        Trace.info("INFO: RM::newCustomer(" + id + ") called.");
-//        // Generate a globally unique Id for the new customer.
-//        int customerId = Integer.parseInt(String.valueOf(id) +
-//                String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
-//                String.valueOf(Math.round(Math.random() * 100 + 1)));
-//        Customer cust = new Customer(customerId);
-//        writeData(id, cust.getKey(), cust);
-//        Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
-//        return customerId;
-        return 0;
+        Trace.info("INFO: RM::newCustomer(" + id + ") called.");
+        // Generate a globally unique Id for the new customer.
+        int customerId = Integer.parseInt(String.valueOf(id) +
+                String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
+                String.valueOf(Math.round(Math.random() * 100 + 1)));
+        Customer cust = new Customer(customerId);
+        customers.put(cust.getKey(), cust);
+        Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
+        return customerId;
     }
 
     // This method makes testing easier.
     @Override
     public boolean newCustomerId(int id, int customerId) {
-//        Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
-//        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-//        if (cust == null) {
-//            cust = new Customer(customerId);
-//            writeData(id, cust.getKey(), cust);
-//            Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
-//            return true;
-//        } else {
-//            Trace.info("INFO: RM::newCustomer(" + id + ", " +
-//                    customerId + ") failed: customer already exists.");
-//            return false;
-//        }
-        return true;
+        Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
+        Customer cust = customers.get(Customer.getKey(customerId));
+        if (cust == null) {
+            cust = new Customer(customerId);
+            customers.put(cust.getKey(), cust);
+            Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
+            return true;
+        } else {
+            Trace.info("INFO: RM::newCustomer(" + id + ", " +
+                    customerId + ") failed: customer already exists.");
+            return false;
+        }
     }
 
     // Delete customer from the database.
+    //todo
     @Override
     public boolean deleteCustomer(int id, int customerId) {
 //        Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
-//        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+//        Customer cust = customers.get(Customer.getKey(customerId));
 //        if (cust == null) {
 //            Trace.warn("RM::deleteCustomer(" + id + ", "
 //                    + customerId + ") failed: customer doesn't exist.");
@@ -313,43 +311,40 @@ public class MiddlewareImpl implements server.ws.Middleware {
 //            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
 //            return true;
 //        }
-        return true;
     }
 
     // Return data structure containing customer reservation info.
     // Returns null if the customer doesn't exist.
     // Returns empty RMHashtable if customer exists but has no reservations.
     public RMHashtable getCustomerReservations(int id, int customerId) {
-//        Trace.info("RM::getCustomerReservations(" + id + ", "
-//                + customerId + ") called.");
-//        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-//        if (cust == null) {
-//            Trace.info("RM::getCustomerReservations(" + id + ", "
-//                    + customerId + ") failed: customer doesn't exist.");
-//            return null;
-//        } else {
-//            return cust.getReservations();
-//        }
-        return m_itemHT;
+        Trace.info("RM::getCustomerReservations(" + id + ", "
+                + customerId + ") called.");
+        Customer cust = customers.get(Customer.getKey(customerId));
+        if (cust == null) {
+            Trace.info("RM::getCustomerReservations(" + id + ", "
+                    + customerId + ") failed: customer doesn't exist.");
+            return null;
+        } else {
+            return cust.getReservations();
+        }
     }
 
     // Return a bill.
     @Override
     public String queryCustomerInfo(int id, int customerId) {
-//        Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
-//        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-//        if (cust == null) {
-//            Trace.warn("RM::queryCustomerInfo(" + id + ", "
-//                    + customerId + ") failed: customer doesn't exist.");
-//            // Returning an empty bill means that the customer doesn't exist.
-//            return "";
-//        } else {
-//            String s = cust.printBill();
-//            Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
-//            System.out.println(s);
-//            return s;
-//        }
-        return "";
+        Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+        Customer cust = customers.get(Customer.getKey(customerId));
+        if (cust == null) {
+            Trace.warn("RM::queryCustomerInfo(" + id + ", "
+                    + customerId + ") failed: customer doesn't exist.");
+            // Returning an empty bill means that the customer doesn't exist.
+            return "";
+        } else {
+            String s = cust.printBill();
+            Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
+            System.out.println(s);
+            return s;
+        }
     }
 
     // Add flight reservation to this customer.
