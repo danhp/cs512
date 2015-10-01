@@ -3,5 +3,8 @@ webapps/
 
 .DS_Store
 
+.idead/*
+.iml
+
 *.class
 *.jar
