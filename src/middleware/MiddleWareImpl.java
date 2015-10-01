@@ -1,10 +1,22 @@
 package middleware;
 
 import javax.jws.WebService;
+import java.net.MalformedURLException;
 import java.util.Vector;
+import java.net.URL;
 
 @WebService(endpointInterface = "middleware.ws.MiddleWare")
 public class MiddleWareImpl implements middleware.ws.MiddleWare {
+
+    middleware.ResourceManagerImplService rm;
+    middleware.ResourceManager proxy;
+
+    public MiddleWareImpl() throws MalformedURLException {
+        URL wsdlLocation = new URL("http://localhost:8080/rm/service?wsdl");
+
+        rm = new middleware.ResourceManagerImplService(wsdlLocation);
+        proxy = rm.getResourceManagerImplPort();
+    }
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {

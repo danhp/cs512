@@ -161,6 +161,7 @@
 
     <target name="middleware" depends="setup">
         <!--<antcall target="clean"/>-->
+        <antcall target="generate-middleware"/>
         <antcall target="build-middleware"/>
         <antcall target="create-war-middleware"/>
         <antcall target="deploy-war-middleware"/>
@@ -197,9 +198,9 @@
                 <path refid="jaxws.classpath"/>
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
-            <arg value="${service.name}"/>
-            <arg value="${service.host}"/>
-            <arg value="${service.port}"/>
+            <arg value="${middleware.name}"/>
+            <arg value="${middleware.host}"/>
+            <arg value="${middleware.port}"/>
         </java>
     </target>
 

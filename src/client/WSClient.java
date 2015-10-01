@@ -3,12 +3,11 @@ package client;
 import java.net.URL;
 import java.net.MalformedURLException;
 
-
 public class WSClient {
 
-    ResourceManagerImplService service;
+    client.MiddleWareImplService service;
 
-    ResourceManager proxy;
+    client.MiddleWare proxy;
 
     public WSClient(String serviceName, String serviceHost, int servicePort)
     throws MalformedURLException {
@@ -16,9 +15,9 @@ public class WSClient {
         URL wsdlLocation = new URL("http", serviceHost, servicePort,
                 "/" + serviceName + "/service?wsdl");
 
-        service = new ResourceManagerImplService(wsdlLocation);
+        service = new client.MiddleWareImplService(wsdlLocation);
 
-        proxy = service.getResourceManagerImplPort();
+        proxy = service.getMiddleWareImplPort();
     }
 
 }
