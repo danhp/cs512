@@ -1,32 +1,39 @@
 package middleware;
 
-import javax.jws.WebService;
 import java.io.IOException;
 import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
-import java.net.MalformedURLException;
 import java.net.ServerSocket;
 import java.net.Socket;
-import java.util.Dictionary;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Vector;
-import java.net.URL;
 
 import client.TCPMessage;
-import middleware.ws.MiddleWare;
 import sun.reflect.generics.reflectiveObjects.NotImplementedException;
 
 
-public class MiddleWareImpl implements MiddleWare {
+public class MiddleWareImpl {
 
     private ServerSocket serverSocket;
 
-    public MiddleWareImpl() {
-        try{
-            serverSocket = new ServerSocket(8000);
+    public MiddleWareImpl(int port) {
+        System.out.println("Creating middleware at " + port);
+        try {
+            serverSocket = new ServerSocket(port);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+    }
+
+    public void run() {
+        System.out.println("Starting middleware.");
+        try {
             while (true) {
                 Socket serviceSocket = serverSocket.accept();
+
                 new Thread(new Runnable() {
                     @Override
                     public void run() {
@@ -43,7 +50,7 @@ public class MiddleWareImpl implements MiddleWare {
 
                             //if HELLO
                             if (connectionPacket.type == 0) {
-                                System.out.println("Received acknowledgement");
+                                System.out.println("Connection established.");
                                 output.writeObject(ackPacket);
                             }
 
@@ -51,17 +58,17 @@ public class MiddleWareImpl implements MiddleWare {
                                 TCPMessage request = (TCPMessage) input.readObject();
 
                                 // Do the request
-//                                TCPMessage answer = encode(decode(request));
-                                System.out.println("Decoding");
+                                TCPMessage answer = encode(decode(request));
 
-                                output.writeObject(ackPacket);
+                                output.writeObject(answer);
                             }
                         } catch (IOException ex) {
+                            System.out.println(ex);
                         } catch (Exception ex) {
                             System.out.println(ex);
                         }
                     }
-                });
+                }).run();
             }
         } catch (IOException ex) {
             System.out.println(ex);
@@ -71,8 +78,6 @@ public class MiddleWareImpl implements MiddleWare {
     }
 
     public Map<String, Object> addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-        System.out.print("a");
-
         Map<String, Object> ret = new HashMap<String, Object>();
         ret.put("success", true);
 
@@ -174,13 +179,15 @@ public class MiddleWareImpl implements MiddleWare {
         return ret;
     }
 
-    private TCPMessage decode(TCPMessage msg) {
-        if (msg.type == 0) return new TCPMessage();
+    private Map<String, Object> decode(TCPMessage msg) {
+        Map<String, Object> map = new HashMap<>();
 
-        Map<String, Object> map;
+        System.out.println("Type" + msg.type + " itemtype " + msg.itemType + " actiontype: + " + msg.actionType);
+        if (msg.type == 0) return map;
 
         switch (msg.itemType) {
-            case 0:
+            case 1:
+                // Dispatch to flight rm
                 switch (msg.actionType) {
                     case 0:
                         map = getFlight(msg.id, Integer.parseInt(msg.key));
@@ -196,7 +203,8 @@ public class MiddleWareImpl implements MiddleWare {
                         break;
                 }
                 break;
-            case 1:
+            case 0:
+                // Dispatch to car
                 switch (msg.actionType) {
                     case 0:
                         map = getCars(msg.id, msg.key);
@@ -234,23 +242,23 @@ public class MiddleWareImpl implements MiddleWare {
                 throw new NotImplementedException();
         }
 
-        return null;
+        return map;
     }
 
     public TCPMessage encode(Map<String, Object> dict) {
         TCPMessage msg = new TCPMessage();
 
-        msg.id = (int)(dict.get("id") == null ? dict.get("id") : 0);
-        msg.type = (int)(dict.get("type") == null ? dict.get("type") : 0);
-        msg.itemType = (int)(dict.get("itemType") == null ? dict.get("itemType") : 0);
-        msg.actionType = (int)(dict.get("actionType") == null ? dict.get("actionType") : 0);
-        msg.key = (String)(dict.get("key") == null ? dict.get("key") : "");
-        msg.count = (int)(dict.get("count") == null ? dict.get("count") : 0);
-        msg.count2 = (int)(dict.get("count2") == null ? dict.get("count2") : 0);
-        msg.car = (boolean)(dict.get("car") == null ? dict.get("car") : true);
-        msg.room = (boolean)(dict.get("room") == null ? dict.get("room") : true);
-        msg.customerId = (int)(dict.get("customerId") == null ? dict.get("customerId") : 0);
-        msg.success = (boolean)(dict.get("success") == null ? dict.get("success") : true);
+        msg.id = (int)(dict.get("id") != null ? dict.get("id") : 0);
+        msg.type = (int)(dict.get("type") != null ? dict.get("type") : 0);
+        msg.itemType = (int)(dict.get("itemType") != null ? dict.get("itemType") : 0);
+        msg.actionType = (int)(dict.get("actionType") != null ? dict.get("actionType") : 0);
+        msg.key = (String)(dict.get("key") != null ? dict.get("key") : "");
+        msg.count = (int)(dict.get("count") != null ? dict.get("count") : 0);
+        msg.count2 = (int)(dict.get("count2") != null ? dict.get("count2") : 0);
+        msg.car = (boolean)(dict.get("car") != null ? dict.get("car") : true);
+        msg.room = (boolean)(dict.get("room") != null ? dict.get("room") : true);
+        msg.customerId = (int)(dict.get("customerId") != null ? dict.get("customerId") : 0);
+        msg.success = (boolean)(dict.get("success") != null ? dict.get("success") : false);
 
         return msg;
     }

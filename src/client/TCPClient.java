@@ -13,13 +13,15 @@ import java.util.Vector;
  */
 public class TCPClient {
     private Socket clientSocket;
-    private boolean connectionEstablished = false;
+    private int numberOfInitialAcks = 0;
 
     // streams
     private ObjectOutputStream output;
     private ObjectInputStream input;
 
     public TCPClient(String host, int port) {
+        System.out.println("Connecting to " + host + ":" + port);
+
         try {
             clientSocket = new Socket(host, port);
 
@@ -31,15 +33,15 @@ public class TCPClient {
 
                 if (responsePacket.type == 0) {
                     // first hello
-                    if (!connectionEstablished) {
+                    if (numberOfInitialAcks < 1) {
                         // Answer with HELLO
                         TCPMessage answerPacket = new TCPMessage();
                         answerPacket.type = 0;
 
                         output.writeObject(answerPacket);
-                    } else {
-                        connectionEstablished = true;
 
+                        numberOfInitialAcks++;
+                    } else {
                         System.out.println("Connection established.");
                         break;
                     }
@@ -74,12 +76,12 @@ public class TCPClient {
             requestPacket.price = flightPrice;
 
             output.writeObject(requestPacket);
-            System.out.print("Received.");
 
             // Wait for answer
             TCPMessage msg = (TCPMessage) input.readObject();
+
             ret = msg.success;
-            System.out.print("Received.");
+            System.out.print("AddFlight: " + ret);
 
         } catch (IOException e) {
         } catch (ClassNotFoundException e) {
@@ -175,7 +177,7 @@ public class TCPClient {
      *
      * @return success.
      */
-    public boolean addCar(int id, int location, int numSeats, int carPrice) {
+    public boolean addCars(int id, String location, int numSeats, int carPrice) {
         boolean ret = false;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -207,7 +209,7 @@ public class TCPClient {
      *
      * @return success.
      */
-    public boolean deleteCar(int id, int location) {
+    public boolean deleteCars(int id, String location) {
         boolean ret = false;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -231,7 +233,7 @@ public class TCPClient {
     }
 
     /* Return the number of empty seats in this car. */
-    public int queryCar(int id, int location) {
+    public int queryCars(int id, String location) {
         int ret = 0;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -255,7 +257,7 @@ public class TCPClient {
     }
 
     /* Return the price of a seat on this car. */
-    public int queryCarPrice(int id, int location) {
+    public int queryCarsPrice(int id, String location) {
         int ret = 0;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -288,7 +290,7 @@ public class TCPClient {
      *
      * @return success.
      */
-    public boolean addRoom(int id, int location, int numSeats, int roomPrice) {
+    public boolean addRooms(int id, String location, int numSeats, int roomPrice) {
         boolean ret = false;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -320,7 +322,7 @@ public class TCPClient {
      *
      * @return success.
      */
-    public boolean deleteRoom(int id, int location) {
+    public boolean deleteRooms(int id, String location) {
         boolean ret = false;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -344,7 +346,7 @@ public class TCPClient {
     }
 
     /* Return the number of empty seats in this room. */
-    public int queryRoom(int id, int location) {
+    public int queryRooms(int id, String location) {
         int ret = 0;
         try {
             TCPMessage requestPacket = new TCPMessage();
@@ -368,7 +370,7 @@ public class TCPClient {
     }
 
     /* Return the price of a seat on this room. */
-    public int queryRoomPrice(int id, int location) {
+    public int queryRoomsPrice(int id, String location) {
         int ret = 0;
         try {
             TCPMessage requestPacket = new TCPMessage();

@@ -12,7 +12,7 @@ public class Client extends TCPClient {
     public static void main(String[] args) {
         try {
 
-            if (args.length != 3) {
+            if (args.length != 2) {
                 System.out.println("Usage: MyClient <service-host> <service-port>");
                 System.exit(-1);
             }
