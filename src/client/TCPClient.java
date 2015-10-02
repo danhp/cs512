@@ -296,7 +296,7 @@ public class TCPClient {
             TCPMessage requestPacket = new TCPMessage();
             requestPacket.id = id;
             requestPacket.type = 1;
-            requestPacket.itemType = 0;
+            requestPacket.itemType = 2;
             requestPacket.actionType = 1;
             requestPacket.key = String.valueOf(location);
             requestPacket.count = numSeats;
@@ -328,7 +328,7 @@ public class TCPClient {
             TCPMessage requestPacket = new TCPMessage();
             requestPacket.id = id;
             requestPacket.type = 1;
-            requestPacket.itemType = 0;
+            requestPacket.itemType = 2;
             requestPacket.actionType = 2;
             requestPacket.key = String.valueOf(location);
 
@@ -352,7 +352,7 @@ public class TCPClient {
             TCPMessage requestPacket = new TCPMessage();
             requestPacket.id = id;
             requestPacket.type = 1;
-            requestPacket.itemType = 0;
+            requestPacket.itemType = 2;
             requestPacket.actionType = 0;
             requestPacket.key = String.valueOf(location);
 
@@ -376,7 +376,7 @@ public class TCPClient {
             TCPMessage requestPacket = new TCPMessage();
             requestPacket.id = id;
             requestPacket.type = 1;
-            requestPacket.itemType = 0;
+            requestPacket.itemType = 2;
             requestPacket.actionType = 0;
             requestPacket.key = String.valueOf(location);
 
@@ -471,12 +471,59 @@ public class TCPClient {
 
     /* Reserve a room at this location. */
     public boolean reserveRoom(int id, int customerId, String location) {
-        return true;
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 2;
+            requestPacket.actionType = 3;
+            requestPacket.key = location;
+            requestPacket.customerId = customerId;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer.
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+            System.out.println(e);
+        } catch (ClassNotFoundException e) {
+            System.out.println(e);
+        } finally {
+            return ret;
+        }
     }
 
     /* Reserve an itinerary. */
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room) {
-        return true;
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 4;
+            requestPacket.actionType = 3;
+            requestPacket.key = location;
+            requestPacket.customerId = customerId;
+            requestPacket.car = car;
+            requestPacket.room = room;
+            requestPacket.flights = flightNumbers;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input .readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+            System.out.println(e);
+        } catch (ClassNotFoundException e) {
+            System.out.print(e);
+        } finally {
+            return ret;
+        }
     }
 }

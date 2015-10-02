@@ -3,6 +3,7 @@ package client;
 import server.ReservableItem;
 
 import java.io.Serializable;
+import java.util.Vector;
 
 /**
  * Created by justindomingue on 15-10-01.
@@ -19,6 +20,7 @@ public class TCPMessage implements Serializable {
     public int count2;
     public int price;
 
+    public Vector flights;
     public boolean car;
     public boolean room;
 
