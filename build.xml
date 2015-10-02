@@ -3,8 +3,11 @@
     <property name="middleware.host" value="localhost"/>
     <property name="middleware.port" value="5000"/>
 
+    <property name="server1.address" value="localhost"/>
     <property name="server1.port" value="6000"/>
+    <property name="server2.address" value="localhost"/>
     <property name="server2.port" value="6001"/>
+    <property name="server3.address" value="localhost"/>
     <property name="server3.port" value="6002"/>
 
     <path id="jaxws.classpath">
@@ -80,6 +83,12 @@
     <target name="run-middleware">
         <java jar="build/jar/Middleware.jar" fork="true">
             <arg value="${middleware.port}" />
+            <arg value="${server1.address}" />
+            <arg value="${server1.port}" />
+            <arg value="${server2.address}" />
+            <arg value="${server2.port}" />
+            <arg value="${server3.address}" />
+            <arg value="${server3.port}" />
         </java>
     </target>
 

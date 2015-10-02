@@ -29,14 +29,26 @@ public class MiddleWareImpl {
 
             System.out.println("Connecting to the resource manager ");
             rmSockets[0] = new Socket(carHost, carPort);
-            rmSockets[1] = new Socket(flightHost, flightPort);
-            rmSockets[2] = new Socket(roomHost, roomPort);
-
         } catch (IOException ex) {
             System.out.println(ex);
         } catch (Exception ex) {
             System.out.println(ex);
         }
+        try {
+            rmSockets[1] = new Socket(flightHost, flightPort);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+        try{
+            rmSockets[2] = new Socket(roomHost, roomPort);
+        } catch (IOException ex) {
+            System.out.println(ex);
+        } catch (Exception ex) {
+            System.out.println(ex);
+        }
+
     }
 
     public void startMiddlware() {
@@ -71,6 +83,7 @@ public class MiddleWareImpl {
                                 // Do the request
                                 TCPMessage answer = decode(request);
 
+                                System.out.println("Received answer  " + answer);
                                 output.writeObject(answer);
                             }
                         } catch (IOException ex) {

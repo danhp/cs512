@@ -27,7 +27,7 @@ public class ResourceManagerImpl {
         try {
             serverSocket = new ServerSocket(port);
 
-            System.out.println("Initialized server socket at " + serverSocket.getLocalSocketAddress() + ":" + serverSocket.getLocalPort());
+            System.out.println("Initialized server socket at " + serverSocket.getLocalSocketAddress());
 
             while (true) {
                 // Accepting new connections
@@ -68,12 +68,15 @@ public class ResourceManagerImpl {
     }
 
     private synchronized ReservableItem getItem(int id, String key) {
+        System.out.println("Getting item with key " + key);
+
         return map.get(key);
     }
 
     private synchronized boolean addItem(int id, ReservableItem item) {
+        System.out.println("Adding item with key " + item.getKey());
+
         String key = item.getKey();
-        ReservableItem ret;
 
         // Item already in db - update
         if (map.containsKey(key)) {
@@ -82,17 +85,18 @@ public class ResourceManagerImpl {
             if (item.getPrice() > 0) {
                 saved.setPrice(item.getPrice());
             }
-            ret = map.put(key, saved);
+            map.put(key, saved);
 
-            // Item not in db - create
+        // Item not in db - create
         } else {
-            ret = map.put(key, item);
+            map.put(key, item);
         }
 
-        return ret != null;
+        return map.containsKey(key);
     }
 
     private synchronized boolean removeItem(int id, String key) {
+        System.out.println("Deleting item with key " + key);
         return map.remove(key) == null;
     }
 
