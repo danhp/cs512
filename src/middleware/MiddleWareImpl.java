@@ -188,20 +188,7 @@ public class MiddleWareImpl {
         switch (msg.itemType) {
             case 1:
                 // Dispatch to flight rm
-                switch (msg.actionType) {
-                    case 0:
-                        map = getFlight(msg.id, Integer.parseInt(msg.key));
-                        break;
-                    case 1:
-                        map = addFlight(msg.id, Integer.parseInt(msg.key), msg.count, msg.price);
-                        break;
-                    case 2:
-                        map = deleteFlight(msg.id, Integer.parseInt(msg.key));
-                        break;
-                    case 3:
-                        map = reserveFlight(msg.id, msg.customerId, Integer.parseInt(msg.key));
-                        break;
-                }
+                //
                 break;
             case 0:
                 // Dispatch to car
@@ -245,21 +232,5 @@ public class MiddleWareImpl {
         return map;
     }
 
-    public TCPMessage encode(Map<String, Object> dict) {
-        TCPMessage msg = new TCPMessage();
 
-        msg.id = (int)(dict.get("id") != null ? dict.get("id") : 0);
-        msg.type = (int)(dict.get("type") != null ? dict.get("type") : 0);
-        msg.itemType = (int)(dict.get("itemType") != null ? dict.get("itemType") : 0);
-        msg.actionType = (int)(dict.get("actionType") != null ? dict.get("actionType") : 0);
-        msg.key = (String)(dict.get("key") != null ? dict.get("key") : "");
-        msg.count = (int)(dict.get("count") != null ? dict.get("count") : 0);
-        msg.count2 = (int)(dict.get("count2") != null ? dict.get("count2") : 0);
-        msg.car = (boolean)(dict.get("car") != null ? dict.get("car") : true);
-        msg.room = (boolean)(dict.get("room") != null ? dict.get("room") : true);
-        msg.customerId = (int)(dict.get("customerId") != null ? dict.get("customerId") : 0);
-        msg.success = (boolean)(dict.get("success") != null ? dict.get("success") : false);
-
-        return msg;
-    }
 }

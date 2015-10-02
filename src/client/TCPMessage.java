@@ -1,5 +1,7 @@
 package client;
 
+import server.ReservableItem;
+
 import java.io.Serializable;
 
 /**
