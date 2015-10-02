@@ -5,26 +5,22 @@ import java.io.*;
 
 
 public class Client extends TCPClient {
-
-    public Client(String serviceName, String serviceHost, int servicePort)
-    throws Exception {
-        super(serviceName, serviceHost, servicePort);
+    public Client(String host, int port) {
+        super(host, port);
     }
 
     public static void main(String[] args) {
         try {
 
             if (args.length != 3) {
-                System.out.println("Usage: MyClient <service-name> "
-                        + "<service-host> <service-port>");
+                System.out.println("Usage: MyClient <service-host> <service-port>");
                 System.exit(-1);
             }
 
-            String serviceName = args[0];
-            String serviceHost = args[1];
-            int servicePort = Integer.parseInt(args[2]);
+            String host = args[0];
+            int port = Integer.parseInt(args[1]);
 
-            Client client = new Client(serviceName, serviceHost, servicePort);
+            Client client = new Client(host, port);
 
             client.run();
 
@@ -98,7 +94,7 @@ public class Client extends TCPClient {
                     numSeats = getInt(arguments.elementAt(3));
                     flightPrice = getInt(arguments.elementAt(4));
 
-                    if (proxy.addFlight(id, flightNumber, numSeats, flightPrice))
+                    if (addFlight(id, flightNumber, numSeats, flightPrice))
                         System.out.println("Flight added");
                     else
                         System.out.println("Flight could not be added");
@@ -125,7 +121,7 @@ public class Client extends TCPClient {
                     numCars = getInt(arguments.elementAt(3));
                     price = getInt(arguments.elementAt(4));
 
-                    if (proxy.addCars(id, location, numCars, price))
+                    if (addCars(id, location, numCars, price))
                         System.out.println("cars added");
                     else
                         System.out.println("cars could not be added");
@@ -152,7 +148,7 @@ public class Client extends TCPClient {
                     numRooms = getInt(arguments.elementAt(3));
                     price = getInt(arguments.elementAt(4));
 
-                    if (proxy.addRooms(id, location, numRooms, price))
+                    if (addRooms(id, location, numRooms, price))
                         System.out.println("rooms added");
                     else
                         System.out.println("rooms could not be added");
@@ -172,7 +168,7 @@ public class Client extends TCPClient {
                 System.out.println("Adding a new Customer using id: " + arguments.elementAt(1));
                 try {
                     id = getInt(arguments.elementAt(1));
-                    int customer = proxy.newCustomer(id);
+                    int customer = newCustomer(id);
                     System.out.println("new customer id: " + customer);
                 }
                 catch(Exception e) {
@@ -193,7 +189,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     flightNumber = getInt(arguments.elementAt(2));
 
-                    if (proxy.deleteFlight(id, flightNumber))
+                    if (deleteFlight(id, flightNumber))
                         System.out.println("Flight Deleted");
                     else
                         System.out.println("Flight could not be deleted");
@@ -216,7 +212,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    if (proxy.deleteCars(id, location))
+                    if (deleteCars(id, location))
                         System.out.println("cars Deleted");
                     else
                         System.out.println("cars could not be deleted");
@@ -239,7 +235,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    if (proxy.deleteRooms(id, location))
+                    if (deleteRooms(id, location))
                         System.out.println("rooms Deleted");
                     else
                         System.out.println("rooms could not be deleted");
@@ -262,7 +258,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     int customer = getInt(arguments.elementAt(2));
 
-                    if (proxy.deleteCustomer(id, customer))
+                    if (deleteCustomer(id, customer))
                         System.out.println("Customer Deleted");
                     else
                         System.out.println("Customer could not be deleted");
@@ -284,7 +280,7 @@ public class Client extends TCPClient {
                 try {
                     id = getInt(arguments.elementAt(1));
                     flightNumber = getInt(arguments.elementAt(2));
-                    int seats = proxy.queryFlight(id, flightNumber);
+                    int seats = queryFlight(id, flightNumber);
                     System.out.println("Number of seats available: " + seats);
                 }
                 catch(Exception e) {
@@ -305,7 +301,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    numCars = proxy.queryCars(id, location);
+                    numCars = queryCars(id, location);
                     System.out.println("number of cars at this location: " + numCars);
                 }
                 catch(Exception e) {
@@ -326,7 +322,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    numRooms = proxy.queryRooms(id, location);
+                    numRooms = queryRooms(id, location);
                     System.out.println("number of rooms at this location: " + numRooms);
                 }
                 catch(Exception e) {
@@ -347,7 +343,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     int customer = getInt(arguments.elementAt(2));
 
-                    String bill = proxy.queryCustomerInfo(id, customer);
+                    String bill = queryCustomerInfo(id, customer);
                     System.out.println("Customer info: " + bill);
                 }
                 catch(Exception e) {
@@ -368,7 +364,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     flightNumber = getInt(arguments.elementAt(2));
 
-                    price = proxy.queryFlightPrice(id, flightNumber);
+                    price = queryFlightPrice(id, flightNumber);
                     System.out.println("Price of a seat: " + price);
                 }
                 catch(Exception e) {
@@ -389,7 +385,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    price = proxy.queryCarsPrice(id, location);
+                    price = queryCarsPrice(id, location);
                     System.out.println("Price of a car at this location: " + price);
                 }
                 catch(Exception e) {
@@ -410,7 +406,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     location = getString(arguments.elementAt(2));
 
-                    price = proxy.queryRoomsPrice(id, location);
+                    price = queryRoomsPrice(id, location);
                     System.out.println("Price of rooms at this location: " + price);
                 }
                 catch(Exception e) {
@@ -433,7 +429,7 @@ public class Client extends TCPClient {
                     int customer = getInt(arguments.elementAt(2));
                     flightNumber = getInt(arguments.elementAt(3));
 
-                    if (proxy.reserveFlight(id, customer, flightNumber))
+                    if (reserveFlight(id, customer, flightNumber))
                         System.out.println("Flight Reserved");
                     else
                         System.out.println("Flight could not be reserved.");
@@ -458,7 +454,7 @@ public class Client extends TCPClient {
                     int customer = getInt(arguments.elementAt(2));
                     location = getString(arguments.elementAt(3));
 
-                    if (proxy.reserveCar(id, customer, location))
+                    if (reserveCar(id, customer, location))
                         System.out.println("car Reserved");
                     else
                         System.out.println("car could not be reserved.");
@@ -483,7 +479,7 @@ public class Client extends TCPClient {
                     int customer = getInt(arguments.elementAt(2));
                     location = getString(arguments.elementAt(3));
 
-                    if (proxy.reserveRoom(id, customer, location))
+                    if (reserveRoom(id, customer, location))
                         System.out.println("room Reserved");
                     else
                         System.out.println("room could not be reserved.");
@@ -517,7 +513,7 @@ public class Client extends TCPClient {
                     car = getBoolean(arguments.elementAt(arguments.size()-2));
                     room = getBoolean(arguments.elementAt(arguments.size()-1));
 
-                    if (proxy.reserveItinerary(id, customer, flightNumbers,
+                    if (reserveItinerary(id, customer, flightNumbers,
                             location, car, room))
                         System.out.println("Itinerary Reserved");
                     else
@@ -549,7 +545,7 @@ public class Client extends TCPClient {
                     id = getInt(arguments.elementAt(1));
                     int customer = getInt(arguments.elementAt(2));
 
-                    boolean c = proxy.newCustomerId(id, customer);
+                    boolean c = newCustomerId(id, customer);
                     System.out.println("new customer id: " + customer);
                 }
                 catch(Exception e) {

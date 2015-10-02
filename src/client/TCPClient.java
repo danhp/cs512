@@ -19,9 +19,9 @@ public class TCPClient {
     private ObjectOutputStream output;
     private ObjectInputStream input;
 
-    public TCPClient() {
+    public TCPClient(String host, int port) {
         try {
-            clientSocket = new Socket("0.0.0.0", 8000);
+            clientSocket = new Socket(host, port);
 
             output = new ObjectOutputStream(clientSocket.getOutputStream());
             input = new ObjectInputStream(clientSocket.getInputStream());
@@ -74,10 +74,12 @@ public class TCPClient {
             requestPacket.price = flightPrice;
 
             output.writeObject(requestPacket);
+            System.out.print("Received.");
 
             // Wait for answer
             TCPMessage msg = (TCPMessage) input.readObject();
             ret = msg.success;
+            System.out.print("Received.");
 
         } catch (IOException e) {
         } catch (ClassNotFoundException e) {
@@ -142,7 +144,7 @@ public class TCPClient {
 
     /* Return the price of a seat on this flight. */
     public int queryFlightPrice(int id, int flightNumber) {
-
+        return 0;
     }
 
 
@@ -153,24 +155,24 @@ public class TCPClient {
      * instead of a flight number.
      */
     public boolean addCars(int id, String location, int numCars, int carPrice) {
-
+        return true;
     }
 
     /* Delete all cars from a location.
      * It should not succeed if there are reservations for this location.
      */
     public boolean deleteCars(int id, String location) {
-
+        return true;
     }
 
     /* Return the number of cars available at this location. */
     public int queryCars(int id, String location) {
-
+        return 0;
     }
 
     /* Return the price of a car at this location. */
     public int queryCarsPrice(int id, String location) {
-
+        return 0;
     }
 
 
@@ -181,24 +183,24 @@ public class TCPClient {
      * instead of a flight number.
      */
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-
+        return true;
     }
 
     /* Delete all rooms from a location.
      * It should not succeed if there are reservations for this location.
      */
     public boolean deleteRooms(int id, String location) {
-
+        return true;
     }
 
     /* Return the number of rooms available at this location. */
     public int queryRooms(int id, String location) {
-
+        return 0;
     }
 
     /* Return the price of a room at this location. */
     public int queryRoomsPrice(int id, String location) {
-
+        return 0;
     }
 
 
@@ -206,42 +208,43 @@ public class TCPClient {
 
     /* Create a new customer and return their unique identifier. */
     public int newCustomer(int id) {
-
+        return 0;
     }
 
     /* Create a new customer with the provided identifier. */
     public boolean newCustomerId(int id, int customerId) {
-
+        return true;
     }
 
     /* Remove this customer and all their associated reservations. */
     public boolean deleteCustomer(int id, int customerId) {
-
+        return true;
     }
 
     /* Return a bill. */
     public String queryCustomerInfo(int id, int customerId) {
 
+        return "";
     }
 
     /* Reserve a seat on this flight. */
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-
+        return true;
     }
 
     /* Reserve a car at this location. */
     public boolean reserveCar(int id, int customerId, String location) {
-
+        return true;
     }
 
     /* Reserve a room at this location. */
     public boolean reserveRoom(int id, int customerId, String location) {
-
+        return true;
     }
 
     /* Reserve an itinerary. */
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room) {
-
+        return true;
     }
 }
