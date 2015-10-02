@@ -144,66 +144,252 @@ public class TCPClient {
 
     /* Return the price of a seat on this flight. */
     public int queryFlightPrice(int id, int flightNumber) {
-        return 0;
-    }
+        int ret = 0;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 1;
+            requestPacket.actionType = 0;
+            requestPacket.key = String.valueOf(flightNumber);
 
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.price;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
+    }
 
     // Car operations //
 
-    /* Add cars to a location.
-     * This should look a lot like addFlight, only keyed on a string location
-     * instead of a flight number.
+    /* Add seats to a car.
+     * In general, this will be used to create a new car, but it should be
+     * possible to add seats to an existing car.  Adding to an existing
+     * car should overwrite the current price of the available seats.
+     *
+     * @return success.
      */
-    public boolean addCars(int id, String location, int numCars, int carPrice) {
-        return true;
+    public boolean addCar(int id, int location, int numSeats, int carPrice) {
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 1;
+            requestPacket.key = String.valueOf(location);
+            requestPacket.count = numSeats;
+            requestPacket.price = carPrice;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Delete all cars from a location.
-     * It should not succeed if there are reservations for this location.
+    /**
+     * Delete the entire car.
+     * This implies deletion of this car and all its seats.  If there is a
+     * reservation on the car, then the car cannot be deleted.
+     *
+     * @return success.
      */
-    public boolean deleteCars(int id, String location) {
-        return true;
+    public boolean deleteCar(int id, int location) {
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 2;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Return the number of cars available at this location. */
-    public int queryCars(int id, String location) {
-        return 0;
+    /* Return the number of empty seats in this car. */
+    public int queryCar(int id, int location) {
+        int ret = 0;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 0;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.count - msg.count2;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Return the price of a car at this location. */
-    public int queryCarsPrice(int id, String location) {
-        return 0;
+    /* Return the price of a seat on this car. */
+    public int queryCarPrice(int id, int location) {
+        int ret = 0;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 0;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.price;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
 
     // Room operations //
 
-    /* Add rooms to a location.
-     * This should look a lot like addFlight, only keyed on a string location
-     * instead of a flight number.
+    /* Add seats to a room.
+     * In general, this will be used to create a new room, but it should be
+     * possible to add seats to an existing room.  Adding to an existing
+     * room should overwrite the current price of the available seats.
+     *
+     * @return success.
      */
-    public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-        return true;
+    public boolean addRoom(int id, int location, int numSeats, int roomPrice) {
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 1;
+            requestPacket.key = String.valueOf(location);
+            requestPacket.count = numSeats;
+            requestPacket.price = roomPrice;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Delete all rooms from a location.
-     * It should not succeed if there are reservations for this location.
+    /**
+     * Delete the entire room.
+     * This implies deletion of this room and all its seats.  If there is a
+     * reservation on the room, then the room cannot be deleted.
+     *
+     * @return success.
      */
-    public boolean deleteRooms(int id, String location) {
-        return true;
+    public boolean deleteRoom(int id, int location) {
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 2;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Return the number of rooms available at this location. */
-    public int queryRooms(int id, String location) {
-        return 0;
+    /* Return the number of empty seats in this room. */
+    public int queryRoom(int id, int location) {
+        int ret = 0;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 0;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.count - msg.count2;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
-    /* Return the price of a room at this location. */
-    public int queryRoomsPrice(int id, String location) {
-        return 0;
+    /* Return the price of a seat on this room. */
+    public int queryRoomPrice(int id, int location) {
+        int ret = 0;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 0;
+            requestPacket.key = String.valueOf(location);
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.price;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
-
-
     // Customer operations //
 
     /* Create a new customer and return their unique identifier. */
