@@ -18,6 +18,8 @@ public class MiddleWareImpl {
     private ServerSocket serverSocket;
 
     private Socket[] rmSockets = new Socket[3];
+    private ObjectInputStream[] inputs = new ObjectInputStream[3];
+    private ObjectOutputStream[] outputs = new ObjectOutputStream[3];
 
     public MiddleWareImpl(int port,
                           String carHost, int carPort,
@@ -29,6 +31,9 @@ public class MiddleWareImpl {
 
             System.out.println("Connecting to the resource manager ");
             rmSockets[0] = new Socket(carHost, carPort);
+            outputs[0] = new ObjectOutputStream(rmSockets[0].getOutputStream());
+            inputs[0] = new ObjectInputStream(rmSockets[0].getInputStream());
+
         } catch (IOException ex) {
             System.out.println(ex);
         } catch (Exception ex) {
@@ -36,6 +41,8 @@ public class MiddleWareImpl {
         }
         try {
             rmSockets[1] = new Socket(flightHost, flightPort);
+            outputs[1] = new ObjectOutputStream(rmSockets[1].getOutputStream());
+            inputs[1] = new ObjectInputStream(rmSockets[1].getInputStream());
         } catch (IOException ex) {
             System.out.println(ex);
         } catch (Exception ex) {
@@ -43,6 +50,8 @@ public class MiddleWareImpl {
         }
         try{
             rmSockets[2] = new Socket(roomHost, roomPort);
+            outputs[2] = new ObjectOutputStream(rmSockets[2].getOutputStream());
+            inputs[2] = new ObjectInputStream(rmSockets[2].getInputStream());
         } catch (IOException ex) {
             System.out.println(ex);
         } catch (Exception ex) {
@@ -102,15 +111,11 @@ public class MiddleWareImpl {
     }
 
     private TCPMessage forward(int index, TCPMessage msg) {
-        Socket socket = rmSockets[index];
         TCPMessage incoming = null;
 
         try {
-            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-            ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
-
-            output.writeObject(msg);
-            incoming = (TCPMessage) input.readObject();
+            outputs[index].writeObject(msg);
+            incoming = (TCPMessage) inputs[index].readObject();
         } catch (IOException e) {
             e.printStackTrace();
         } catch (ClassNotFoundException e) {
@@ -121,108 +126,6 @@ public class MiddleWareImpl {
 
 
     }
-//
-//    public Map<String, Object> addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-//        Map<String, Object> ret = new HashMap<String, Object>();
-//        ret.put("success", true);
-//
-//        return ret;
-//    }
-//
-//    public Map<String, Object> deleteFlight(int id, int flightNumber) {
-//        Map<String, Object> ret = new HashMap<String, Object>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> queryFlight(int id, int flightNumber) {
-//        Map<String, Object> ret = new HashMap<String, Object>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> addCars(int id, String location, int numCars, int carPrice) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> getFlight(int id, int flightNumber) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> deleteCars(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> queryCars(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> addRooms(int id, String location, int numRooms, int roomPrice) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> getCars(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> deleteRooms(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> queryRooms(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> newCustomer(int id) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> getRooms(int id, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> newCustomerId(int id, int customerId) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> deleteCustomer(int id, int customerId) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> queryCustomerInfo(int id, int customerId) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> reserveFlight(int id, int customerId, int flightNumber) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> reserveCar(int id, int customerId, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> reserveRoom(int id, int customerId, String location) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
-//
-//    public Map<String, Object> reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
-//        Map<String, Object> ret = new HashMap<>();
-//        return ret;
-//    }
 
     private TCPMessage decode(TCPMessage msg) {
         Map<String, Object> map = new HashMap<>();

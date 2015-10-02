@@ -127,6 +127,7 @@ public class ResourceManagerImpl {
                 break;
             case 3:
 //                map = reserveItem(incoming.id, incoming.customerId, Integer.parseInt(incoming.key));
+                map.put("success", reserveItem(incoming.id, incoming.customerId, incoming.key, incoming.key));
                 break;
         }
 
@@ -163,30 +164,32 @@ public class ResourceManagerImpl {
 //                    + key + ", " + location + ") failed: customer doesn't exist.");
 //            return false;
 //        }
-//
-//        // Check if the item is available.
-//        ReservableItem item = (ReservableItem) readData(id, key);
-//        if (item == null) {
-//            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-//                    + key + ", " + location + ") failed: item doesn't exist.");
-//            return false;
-//        } else if (item.getCount() == 0) {
-//            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-//                    + key + ", " + location + ") failed: no more items.");
-//            return false;
-//        } else {
+
+        // Check if the item is available.
+        ReservableItem item = (ReservableItem) getItem(id, key);
+        System.out.println("Reserving: " + item);
+
+        if (item == null) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + key + ", " + location + ") failed: item doesn't exist.");
+            return false;
+
+        } else if (item.getCount() == 0) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + key + ", " + location + ") failed: no more items.");
+            return false;
+
+        } else {
 //            // Do reservation.
 //            cust.reserve(key, location, item.getPrice());
 //            writeData(id, cust.getKey(), cust);
-//
-//            // Decrease the number of available items in the storage.
-//            item.setCount(item.getCount() - 1);
-//            item.setReserved(item.getReserved() + 1);
-//
-//            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-//                    + key + ", " + location + ") OK.");
-//            return true;
-//        }
-        return true;
+            item.setCount(item.getCount() - 1);
+            item.setReserved(item.getReserved() + 1);
+
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + key + ", " + location + ") OK.");
+
+            return true;
+        }
     }
 }

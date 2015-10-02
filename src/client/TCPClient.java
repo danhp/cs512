@@ -417,12 +417,56 @@ public class TCPClient {
 
     /* Reserve a seat on this flight. */
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        return true;
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 1;
+            requestPacket.actionType = 3;
+            requestPacket.key = String.valueOf(flightNumber);
+            requestPacket.customerId = customerId;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer.
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+            System.out.println(e);
+        } catch (ClassNotFoundException e) {
+            System.out.println(e);
+        } finally {
+            return ret;
+        }
     }
 
     /* Reserve a car at this location. */
     public boolean reserveCar(int id, int customerId, String location) {
-        return true;
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 0;
+            requestPacket.actionType = 3;
+            requestPacket.key = location;
+            requestPacket.customerId = customerId;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer.
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+            System.out.println(e);
+        } catch (ClassNotFoundException e) {
+            System.out.println(e);
+        } finally {
+            return ret;
+        }
     }
 
     /* Reserve a room at this location. */
