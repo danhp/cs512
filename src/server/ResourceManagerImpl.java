@@ -97,7 +97,7 @@ public class ResourceManagerImpl {
 
     private synchronized boolean removeItem(int id, String key) {
         System.out.println("Deleting item with key " + key);
-        return map.remove(key) == null;
+        return map.remove(key) != null;
     }
 
     private TCPMessage handleRequest(TCPMessage incoming) {
@@ -114,6 +114,7 @@ public class ResourceManagerImpl {
                     map.put("key", item.getKey());
                     map.put("count", item.getCount());
                     map.put("count2", item.getReserved());
+                    map.put("price", item.getPrice());
                     map.put("success", true);
                 } else {
                     map.put("success", false);
@@ -126,8 +127,9 @@ public class ResourceManagerImpl {
                 map.put("success", removeItem(incoming.id, incoming.key));
                 break;
             case 3:
-//                map = reserveItem(incoming.id, incoming.customerId, Integer.parseInt(incoming.key));
+                ReservableItem item2 = getItem(incoming.id, incoming.key); // to be able to return the price
                 map.put("success", reserveItem(incoming.id, incoming.customerId, incoming.key, incoming.key));
+                map.put("price", item2.getPrice());
                 break;
         }
 
@@ -144,6 +146,7 @@ public class ResourceManagerImpl {
         msg.key = (String) (dict.get("key") != null ? dict.get("key") : "");
         msg.count = (int) (dict.get("count") != null ? dict.get("count") : 0);
         msg.count2 = (int) (dict.get("count2") != null ? dict.get("count2") : 0);
+        msg.price = (int) (dict.get("price") != null ? dict.get("price") : 0);
         msg.car = (boolean) (dict.get("car") != null ? dict.get("car") : true);
         msg.room = (boolean) (dict.get("room") != null ? dict.get("room") : true);
         msg.customerId = (int) (dict.get("customerId") != null ? dict.get("customerId") : 0);
@@ -183,7 +186,6 @@ public class ResourceManagerImpl {
 //            // Do reservation.
 //            cust.reserve(key, location, item.getPrice());
 //            writeData(id, cust.getKey(), cust);
-            item.setCount(item.getCount() - 1);
             item.setReserved(item.getReserved() + 1);
 
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "

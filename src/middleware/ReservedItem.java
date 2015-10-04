@@ -63,8 +63,11 @@ public class ReservedItem implements Serializable {
     // have to change if we weren't lumping all reservable items under the
     // same price.
     public String getKey() {
-        String s = getReservableItemKey();
+        String s = getReservableItemKey() + "-" + getLocation();
         return s.toLowerCase();
     }
 
+    public static String getKey(String key, String location) {
+        return key + "-" + location;
+    }
 }

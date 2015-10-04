@@ -81,7 +81,6 @@ public class TCPClient {
             TCPMessage msg = (TCPMessage) input.readObject();
 
             ret = msg.success;
-            System.out.print("AddFlight: " + ret);
 
         } catch (IOException e) {
         } catch (ClassNotFoundException e) {

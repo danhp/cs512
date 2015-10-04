@@ -499,7 +499,7 @@ public class Client extends TCPClient {
                 System.out.println("Reserving an Itinerary using id: " + arguments.elementAt(1));
                 System.out.println("Customer id: " + arguments.elementAt(2));
                 for (int i = 0; i<arguments.size()-6; i++)
-                    System.out.println("Flight number" + arguments.elementAt(3 + i));
+                    System.out.println("Flight number: " + arguments.elementAt(3 + i));
                 System.out.println("Location for car/room booking: " + arguments.elementAt(arguments.size()-3));
                 System.out.println("car to book?: " + arguments.elementAt(arguments.size()-2));
                 System.out.println("room to book?: " + arguments.elementAt(arguments.size()-1));

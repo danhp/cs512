@@ -120,15 +120,22 @@
         </jar>
     </target>
 
-    <target name="run-server">
+    <target name="server-1">
         <java jar="build/jar/Server.jar" fork="true">
             <arg value="${server1.port}" />
         </java>
     </target>
 
-    <target name="server">
-        <antcall target="server-jar"/>
-        <antcall target="run-server"/>
+    <target name="server-2">
+        <java jar="build/jar/Server.jar" fork="true">
+            <arg value="${server2.port}" />
+        </java>
+    </target>
+
+    <target name="server-3">
+        <java jar="build/jar/Server.jar" fork="true">
+            <arg value="${server3.port}" />
+        </java>
     </target>
 
     <target name="help">

@@ -261,7 +261,8 @@ public class MiddleWareImpl {
         TCPMessage answer = new TCPMessage();
         switch (msg.actionType){
             case 0:
-                answer.bill = getCustomer(msg.customerId).printBill();
+                Customer cust = getCustomer(msg.customerId);
+                answer.bill = cust != null ? cust.printBill() : "Customer not found";
                 break;
             case 1:
                 answer.customerId = addCustomer(msg.customerId);
