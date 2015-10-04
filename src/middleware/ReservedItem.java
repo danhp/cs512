@@ -3,18 +3,21 @@
 // CSE 593
 // -------------------------------
 
-package server;
+package middleware;
 
 
 // Represents a customer's "reserved item" (e.g. Flight, Car, or Room).
 // Note: if a customer reserves more than one item of the same kind, this is
 // stored as a single instance of ReservedItem reflecting the *latest price*.
 
-public class ReservedItem extends RMItem {
+import server.RMItem;
+
+import java.io.Serializable;
+
+public class ReservedItem implements Serializable {
 
     private int m_nCount;
     private int m_nPrice;
-    private int m_nCustomer;
     private String m_strReservableItemKey;
     private String m_strLocation;
 

@@ -5,14 +5,13 @@ import java.io.ObjectInputStream;
 import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
+import java.sql.SQLSyntaxErrorException;
 import java.util.HashMap;
 import java.util.Iterator;
 import java.util.Map;
 import java.util.Vector;
 
 import client.TCPMessage;
-import sun.reflect.generics.reflectiveObjects.NotImplementedException;
-
 
 public class MiddleWareImpl {
 
@@ -21,6 +20,9 @@ public class MiddleWareImpl {
     private Socket[] rmSockets = new Socket[3];
     private ObjectInputStream[] inputs = new ObjectInputStream[3];
     private ObjectOutputStream[] outputs = new ObjectOutputStream[3];
+
+    // Customer Objects
+    private Map<Integer, Customer> map = new HashMap<Integer, Customer>();
 
     public MiddleWareImpl(int port,
                           String carHost, int carPort,
@@ -114,6 +116,45 @@ public class MiddleWareImpl {
         }
     }
 
+    private TCPMessage decode(TCPMessage msg) {
+        Map<String, Object> map = new HashMap<>();
+
+        System.out.println("Type " + msg.type + " ,itemtype " + msg.itemType + " ,actiontype: + " + msg.actionType);
+        if (msg.type == 0) return msg;
+
+        switch (msg.itemType){
+            case 3:
+                System.out.println("Handling customer");
+                return handleCustomer(msg);
+            case 4:
+                return itinerary(msg);
+            default:
+                // Process info if attempting to reserve
+                TCPMessage answer = new TCPMessage();
+
+                if (msg.actionType == 3) {
+                    // Customer not found,
+                    if (!this.map.containsKey(msg.customerId)) {
+                        System.out.println("Customer not found.");
+                        answer.success = false;
+                        return answer;
+                    }
+
+                    answer = forward(msg.itemType, msg);
+
+                    if (answer.success) {
+                        Customer customer = this.map.get(msg.customerId);
+                        customer.reserve(String.valueOf(msg.itemType), msg.key, answer.price);
+                    }
+
+                    return answer;
+
+                } else {
+                    return forward(msg.itemType, msg);
+                }
+        }
+    }
+
     private TCPMessage forward(int index, TCPMessage msg) {
         TCPMessage incoming = null;
 
@@ -130,6 +171,7 @@ public class MiddleWareImpl {
     }
 
     private TCPMessage itinerary(TCPMessage msg) {
+
         System.out.println("Reserving an itinerary");
         TCPMessage ret = new TCPMessage();
         ret.success = false;
@@ -214,16 +256,58 @@ public class MiddleWareImpl {
         return ret;
     }
 
-    private TCPMessage decode(TCPMessage msg) {
-        Map<String, Object> map = new HashMap<>();
-
-        System.out.println("Type" + msg.type + " itemtype " + msg.itemType + " actiontype: + " + msg.actionType);
-        if (msg.type == 0) return msg;
-
-        if (msg.itemType != 4) {
-            return forward(msg.itemType, msg);
-        } else {
-            return itinerary(msg);
+    // Customer operations.
+    private TCPMessage handleCustomer(TCPMessage msg) {
+        TCPMessage answer = new TCPMessage();
+        switch (msg.actionType){
+            case 0:
+                answer.bill = getCustomer(msg.customerId).printBill();
+                break;
+            case 1:
+                answer.customerId = addCustomer(msg.customerId);
+                answer.success = (answer.customerId != -1);
+                break;
+            case 2:
+                answer.success = removeCustomer(msg.id, msg.customerId);
+                break;
+            default:
+                System.out.println("Unsupported customer action");
+                break;
         }
+        return answer;
+    }
+
+    private Customer getCustomer(int customerID) {
+        // TODO: return the bill.
+        return map.get(customerID);
+    }
+
+    private int addCustomer(int customerID) {
+        if (customerID == 0) {
+            System.out.print("Creating a new ID");
+            customerID = map.size() + 5;
+        }
+
+        System.out.println("Attempting to add customer: " + customerID);
+        if (map.containsKey(customerID)) {
+            // Customer already present
+            System.out.println("ID already in use");
+            return -1;
+        } else {
+            Customer customer = new Customer(customerID);
+            map.put(customerID, customer);
+            return customerID;
+        }
+    }
+
+    private boolean removeCustomer(int id, int customerID) {
+        // TODO: Notify all the RMs of the removed customer.
+        System.out.println("Removing customer with key: " + customerID);
+
+        Customer customer = map.remove(customerID);
+
+        if (customer == null) return false;
+
+        return true;
     }
 }

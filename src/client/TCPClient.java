@@ -345,7 +345,7 @@ public class TCPClient {
         }
     }
 
-    /* Return the number of empty seats in this room. */
+    /* Return the number of rooms at a given location */
     public int queryRooms(int id, String location) {
         int ret = 0;
         try {
@@ -396,23 +396,100 @@ public class TCPClient {
 
     /* Create a new customer and return their unique identifier. */
     public int newCustomer(int id) {
-        return 0;
+        int ret = -1;
+        try{
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 3;
+            requestPacket.actionType = 1;
+
+            // Tell the middleware we want an id
+            requestPacket.customerId = 0;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.customerId;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
     /* Create a new customer with the provided identifier. */
     public boolean newCustomerId(int id, int customerId) {
-        return true;
+        boolean ret = false;
+        try{
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 3;
+            requestPacket.actionType = 1;
+            requestPacket.customerId = customerId;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
     /* Remove this customer and all their associated reservations. */
     public boolean deleteCustomer(int id, int customerId) {
-        return true;
+        boolean ret = false;
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 3;
+            requestPacket.actionType = 2;
+            requestPacket.customerId = customerId;
+
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.success;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
     /* Return a bill. */
     public String queryCustomerInfo(int id, int customerId) {
+        String ret = "";
+        try {
+            TCPMessage requestPacket = new TCPMessage();
+            requestPacket.id = id;
+            requestPacket.type = 1;
+            requestPacket.itemType = 3;
+            requestPacket.actionType = 0;
+            requestPacket.customerId = customerId;
 
-        return "";
+            output.writeObject(requestPacket);
+
+            // Wait for answer
+            TCPMessage msg = (TCPMessage) input.readObject();
+            ret = msg.bill;
+
+        } catch (IOException e) {
+        } catch (ClassNotFoundException e) {
+        } finally {
+            return ret;
+        }
     }
 
     /* Reserve a seat on this flight. */

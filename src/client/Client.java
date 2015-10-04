@@ -546,7 +546,11 @@ public class Client extends TCPClient {
                     int customer = getInt(arguments.elementAt(2));
 
                     boolean c = newCustomerId(id, customer);
-                    System.out.println("new customer id: " + customer);
+                    if (c) {
+                        System.out.println("new customer id: " + customer);
+                    } else {
+                        System.out.println("Addition failed.");
+                    }
                 }
                 catch(Exception e) {
                     System.out.println("EXCEPTION: ");

@@ -26,6 +26,7 @@ public class TCPMessage implements Serializable {
 
     // customers
     public int customerId;
+    public String bill;
 
     // success
     public boolean success;
