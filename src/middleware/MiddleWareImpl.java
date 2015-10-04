@@ -193,7 +193,12 @@ public class MiddleWareImpl {
 
                 // Wait for answer.
                 TCPMessage answer = (TCPMessage) inputs[0].readObject();
-                System.out.println("Car reserved for Itinerary");
+                if (answer.success) {
+                    System.out.println("Car reserved for Itinerary");
+
+                    Customer customer = this.map.get(msg.customerId);
+                    customer.reserve("0", msg.key, answer.price);
+                }
             } catch (IOException e) {
                 System.out.println(e);
             } catch (ClassNotFoundException e) {
@@ -217,7 +222,12 @@ public class MiddleWareImpl {
 
                 // Wait for answer.
                 TCPMessage answer = (TCPMessage) inputs[2].readObject();
-                System.out.println("Room reserved for Itinerary");
+                if (answer.success) {
+                    System.out.println("Room reserved for Itinerary");
+
+                    Customer customer = this.map.get(msg.customerId);
+                    customer.reserve("2", msg.key, answer.price);
+                }
             } catch (IOException e) {
                 System.out.println(e);
             } catch (ClassNotFoundException e) {
@@ -228,12 +238,13 @@ public class MiddleWareImpl {
         Iterator i = msg.flights.iterator();
         while (i.hasNext()) {
             TCPMessage flightReservation = new TCPMessage();
+            String flightNumber = (String) i.next();
             try {
                 flightReservation.id = msg.id;
                 flightReservation.type = 1;
                 flightReservation.itemType = 1;
                 flightReservation.actionType = 3;
-                flightReservation.key = (String) i.next();
+                flightReservation.key = flightNumber;
                 flightReservation.customerId = msg.customerId;
 
                 outputs[1].writeObject(flightReservation);
@@ -243,8 +254,12 @@ public class MiddleWareImpl {
                 ret.success = answer.success;
                 if (!ret.success) {
                     return ret;
+                } else {
+                    System.out.println("Flight reserved for itinerary");
+
+                    Customer customer = this.map.get(msg.customerId);
+                    customer.reserve("1", flightNumber, answer.price);
                 }
-                System.out.println("Flight reserved for itinerary");
 
             } catch (IOException e) {
                 System.out.println(e);
@@ -279,7 +294,6 @@ public class MiddleWareImpl {
     }
 
     private Customer getCustomer(int customerID) {
-        // TODO: return the bill.
         return map.get(customerID);
     }
 
