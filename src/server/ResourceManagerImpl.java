@@ -19,7 +19,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Read a data item.
     private RMItem readData(int id, String key) {
         synchronized(m_itemHT) {
-            try {
             return (RMItem) m_itemHT.get(key);
         }
     }
