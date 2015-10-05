@@ -1,13 +1,13 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project basedir="." default="help" name="project">
 
-    <property name="service.name" value="rm"/>
-    <property name="service.host" value="localhost"/>
-    <property name="service.port" value="8080"/>
+    <property name="server.name" value="rm"/>
+    <property name="server1.host" value="localhost"/>
+    <property name="server1.port" value="8080"/>
 
     <property name="middleware.name" value="middleware"/>
     <property name="middleware.host" value="localhost"/>
-    <property name="middleware.port" value="8081"/>
+    <property name="middleware.port" value="7000"/>
 
     <path id="jaxws.classpath">
         <pathelement location="${java.home}/../lib/tools.jar"/>
@@ -53,7 +53,7 @@
 
     <target name="create-war">
         <war 
-            warfile="${basedir}/build/war/${service.name}.war" 
+            warfile="${basedir}/build/war/${server.name}.war"
             webxml="etc/web.xml">
             <webinf dir="${basedir}/etc/server" includes="sun-jaxws.xml"/>
             <zipfileset
@@ -65,12 +65,12 @@
     </target>
 
     <target name="deploy-war">
-        <delete dir="${basedir}/webapps/${service.name}" 
+        <delete dir="${basedir}/webapps/${server.name}"
             includeEmptyDirs="true"/>
-        <mkdir dir="${basedir}/webapps/${service.name}"/>        
+        <mkdir dir="${basedir}/webapps/${server.name}"/>
         <unzip 
-            src="${basedir}/build/war/${service.name}.war"
-            dest="${basedir}/webapps/${service.name}"/>
+            src="${basedir}/build/war/${server.name}.war"
+            dest="${basedir}/webapps/${server.name}"/>
     </target>
     
     <target name="start-tomcat">
@@ -81,8 +81,8 @@
                 <pathelement location="${basedir}/build/classes"/>
             </classpath>
             <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
-            <arg value="${service.name}"/>
-            <arg value="${service.port}"/>
+            <arg value="${server.name}"/>
+            <arg value="${server.port}"/>
             <arg value="${basedir}/webapps"/>
         </java>
     </target>
@@ -92,7 +92,9 @@
         <antcall target="build-server"/>
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
-        <antcall target="start-tomcat"/>        
+        <antcall target="start-tomcat">
+            <param name="server.port" value="${port}"/>
+        </antcall>
     </target>
 
     <target name="generate-middleware" depends="setup">
@@ -101,7 +103,7 @@
                 keep="true"
                 destdir="${basedir}/build/classes"
                 package="middleware"
-                wsdl="http://${service.host}:${service.port}/${service.name}/service?wsdl">
+                wsdl="http://${server1.host}:${server1.port}/${server.name}/service?wsdl">
         </wsimport>
     </target>
 
