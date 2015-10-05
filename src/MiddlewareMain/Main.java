@@ -8,18 +8,22 @@ public class Main {
     public static void main(String[] args)
             throws Exception {
 
-        if (args.length != 3) {
+        if (args.length != 11) {
             System.out.println(
-                    "Usage: java Main <service-name> <service-port> <deploy-dir>");
+                    "Usage: java Main <service-name> <service-port> <server1-name> <server1-port> <server2-name> <server2-port> <server3-name> <server3-port> <server4-name> <server4-port> <deploy-dir>");
             System.exit(-1);
         }
 
         String serviceName = args[0];
-        int port = Integer.parseInt(args[1]);
-        String deployDir = args[2];
+        int servicePort = Integer.parseInt(args[1]);
+
+        String hosts[] = {args[2], args[4], args[6], args[8] };
+        int ports[] = {Integer.parseInt(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[7]), Integer.parseInt(args[9]) };
+
+        String deployDir = args[10];
 
         Tomcat tomcat = new Tomcat();
-        tomcat.setPort(port);
+        tomcat.setPort(servicePort);
         tomcat.setBaseDir(deployDir);
 
         tomcat.getHost().setAppBase(deployDir);

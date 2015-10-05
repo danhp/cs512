@@ -426,30 +426,4 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public boolean reserveRoom(int id, int customerId, String location) {
         return reserveItem(id, customerId, Room.getKey(location), location);
     }
-
-
-    // Reserve an itinerary.
-    @Override
-    public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
-                                    String location, boolean car, boolean room) {
-
-        // Assuming everything has to work for reserve itinerary to return true
-        boolean result = false;
-
-        for (Enumeration<Integer> e = flightNumbers.elements(); e.hasMoreElements();)
-        {
-            result = reserveFlight(id, customerId, e.nextElement());
-        }
-
-        if (car) {
-            result = reserveCar(id, customerId, location);
-        }
-
-        if (room) {
-            result = reserveRoom(id, customerId, location);
-        }
-
-        return result;
-    }
-
 }

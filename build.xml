@@ -2,8 +2,15 @@
 <project basedir="." default="help" name="project">
 
     <property name="server.name" value="rm"/>
+
     <property name="server1.host" value="localhost"/>
-    <property name="server1.port" value="8080"/>
+    <property name="server1.port" value="6000"/>
+    <property name="server2.host" value="localhost"/>
+    <property name="server2.port" value="6001"/>
+    <property name="server3.host" value="localhost"/>
+    <property name="server3.port" value="6002"/>
+    <property name="server4.host" value="localhost"/>
+    <property name="server4.port" value="6003"/>
 
     <property name="middleware.name" value="middleware"/>
     <property name="middleware.host" value="localhost"/>
@@ -87,11 +94,16 @@
         </java>
     </target>
 
-    <target name="server" depends="setup">
-        <!--<antcall target="clean"/>-->
+    <!-- Called to build and deploy the server code -->
+    <target name="prepare-server" depends="setup">
+        <antcall target="clean"/>
         <antcall target="build-server"/>
         <antcall target="create-war"/>
         <antcall target="deploy-war"/>
+    </target>
+
+    <!-- Starts a server at port -->
+    <target name="server" depends="setup">
         <antcall target="start-tomcat">
             <param name="server.port" value="${port}"/>
         </antcall>
@@ -157,17 +169,37 @@
             <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
             <arg value="${middleware.name}"/>
             <arg value="${middleware.port}"/>
+            <arg value="${server1.name}"/>
+            <arg value="${server1.port}"/>
+            <arg value="${server2.name}"/>
+            <arg value="${server2.port}"/>
+            <arg value="${server3.name}"/>
+            <arg value="${server3.port}"/>
+            <arg value="${server4.name}"/>
+            <arg value="${server4.port}"/>
             <arg value="${basedir}/webapps"/>
         </java>
     </target>
 
     <target name="middleware" depends="setup">
         <!--<antcall target="clean"/>-->
+        <antcall target="build-main"/>
         <antcall target="generate-middleware"/>
         <antcall target="build-middleware"/>
         <antcall target="create-war-middleware"/>
         <antcall target="deploy-war-middleware"/>
-        <antcall target="start-tomcat-middleware"/>
+        <antcall target="start-tomcat-middleware">
+            <param name="name" value="${middleware.name}"/>
+            <param name="port" value="${middleware.port}"/>
+            <param name="server1.name" value="${server1.name}"/>
+            <param name="server1.port" value="${server1.port}"/>
+            <param name="server2.name" value="${server2.name}"/>
+            <param name="server2.port" value="${server2.port}"/>
+            <param name="server3.name" value="${server3.name}"/>
+            <param name="server3.port" value="${server3.port}"/>
+            <param name="server4.name" value="${server4.name}"/>
+            <param name="server4.port" value="${server4.port}"/>
+        </antcall>
     </target>
 
     <taskdef name="wsimport" classname="com.sun.tools.ws.ant.WsImport">
