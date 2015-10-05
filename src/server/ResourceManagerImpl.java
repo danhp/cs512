@@ -364,14 +364,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public Customer getCustomer(int id, int customerId) {
+    public boolean customerExists(int id, int customerId) {
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        return cust;
+        return (cust != null);
     }
 
     @Override
-    public void setCustomer(int id, Customer cust) {
-        writeData(id, cust.getKey(), cust);
+    public void setCustomerReservation(int id, int customerId, String key, String location, int price) {
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        cust.reserve(key, location, price);
     }
 
     // Return data structure containing customer reservation info.

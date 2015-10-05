@@ -33,6 +33,7 @@ public class Main {
         tomcat.addWebapp("/" + serviceName, 
                 new File(deployDir + "/" + serviceName).getAbsolutePath());
 
+        System.out.println("Starting server at " + tomcat.getServer().getAddress());
         tomcat.start();
         tomcat.getServer().await();
     }

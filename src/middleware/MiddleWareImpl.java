@@ -1,13 +1,12 @@
 package middleware;
 
-import middleware.ws.MiddleWare;
-import server.Customer;
+import server.Car;
 import server.Flight;
+import server.Room;
 import server.Trace;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
-import java.util.ArrayList;
 import java.util.Enumeration;
 import java.util.Vector;
 import java.net.URL;
@@ -142,8 +141,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        Customer cust = getCustomerProxy().getCustomer(id, customerId);
-        if (cust == null) {
+        if (!getCustomerProxy().customerExists(id, customerId)) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
             return false;
@@ -158,21 +156,53 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryFlightPrice(id, flightNumber);
-        cust.reserve(Flight.getKey(flightNumber), flightNumber, price;
-
-        getCustomerProxy().setCustomer(id, cust);
+        getCustomerProxy().setCustomerReservation(id, customerId, Flight.getKey(flightNumber), String.valueOf(flightNumber), price);
 
         return true;
     }
 
     @Override
     public boolean reserveCar(int id, int customerId, String location) {
-        return getCarProxy().reserveCar(id, customerId, location);
+        if (!getCustomerProxy().customerExists(id, customerId)) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Car.getKey(location) + ", " + location + ") failed: customer doesn't exist.");
+            return false;
+        }
+
+        boolean reserved = getCarProxy().reserveCar(id, customerId, location);
+
+        if (!reserved) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Car.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+            return false;
+        }
+
+        int price = queryCarsPrice(id, location);
+        getCustomerProxy().setCustomerReservation(id, customerId, Car.getKey(location), location, price);
+
+        return true;
     }
 
     @Override
     public boolean reserveRoom(int id, int customerId, String location) {
-        return getRoomProxy().reserveRoom(id, customerId, location);
+        if (!getCustomerProxy().customerExists(id, customerId)) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Room.getKey(location) + ", " + location + ") failed: customer doesn't exist.");
+            return false;
+        }
+
+        boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
+
+        if (!reserved) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Room.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+            return false;
+        }
+
+        int price = queryRoomsPrice(id, location);
+        getCustomerProxy().setCustomerReservation(id, customerId, Room.getKey(location), location, price);
+
+        return true;
     }
 
     @Override

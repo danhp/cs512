@@ -120,10 +120,10 @@ public interface ResourceManager {
     public boolean deleteCustomer(int id, int customerId); 
 
     @WebMethod
-    public Customer getCustomer(int id, int customerId);
+    public boolean customerExists(int id, int customerId);
 
     @WebMethod
-    public void setCustomer(int id, Customer cust);
+    public void setCustomerReservation(int id, int customerId, String key, String location, int price);
 
     /* Return a bill. */
     @WebMethod

@@ -21,8 +21,10 @@ public class Main {
         int ports[] = {Integer.parseInt(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[7]), Integer.parseInt(args[9]) };
 
         String deployDir = args[10];
-
         Tomcat tomcat = new Tomcat();
+
+        System.out.println("Starting server at " + tomcat.getHost().getName() + tomcat.getService().getServer().getAddress());
+
         tomcat.setPort(servicePort);
         tomcat.setBaseDir(deployDir);
 
