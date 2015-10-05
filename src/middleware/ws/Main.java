@@ -1,9 +1,6 @@
 package middleware.ws;
 
 import middleware.MiddleWareImpl;
-import org.apache.catalina.startup.Tomcat;
-
-import java.io.File;
 
 public class Main {
     public static void main(String[] args)
@@ -27,6 +24,6 @@ public class Main {
 
         MiddleWareImpl mw = new MiddleWareImpl(port, address1, port1, address2, port2, address3, port3);
 
-        mw.startMiddlware();
+        mw.startMiddleware();
     }
 }

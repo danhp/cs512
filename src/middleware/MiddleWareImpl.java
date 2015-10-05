@@ -7,6 +7,7 @@ import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
 
 import client.TCPMessage;
 import server.ReservableItem;
@@ -20,7 +21,7 @@ public class MiddleWareImpl {
     private ObjectOutputStream[] outputs = new ObjectOutputStream[3];
 
     // Customer Objects
-    private Map<Integer, Customer> map = new HashMap<Integer, Customer>();
+    private Map<Integer, Customer> map = new ConcurrentHashMap<Integer, Customer>();
 
     public MiddleWareImpl(int port,
                           String carHost, int carPort,
@@ -64,7 +65,7 @@ public class MiddleWareImpl {
         }
     }
 
-    public void startMiddlware() {
+    public void startMiddleware() {
         System.out.println("Starting middleware.");
         try {
             while (true) {
