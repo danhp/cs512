@@ -20,101 +20,101 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-        return true;
+        return proxy.addFlight(id, flightNumber, numSeats, flightPrice);
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
-        return false;
+        return proxy.deleteFlight(id, flightNumber);
     }
 
     @Override
     public int queryFlight(int id, int flightNumber) {
-        return 0;
+        return queryFlight(id, flightNumber);
     }
 
     @Override
     public int queryFlightPrice(int id, int flightNumber) {
-        return 0;
+        return queryFlightPrice(id, flightNumber);
     }
 
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
-        return false;
+        return addCars(id, location, numCars, carPrice);
     }
 
     @Override
     public boolean deleteCars(int id, String location) {
-        return false;
+        return proxy.deleteCars(id, location);
     }
 
     @Override
     public int queryCars(int id, String location) {
-        return 0;
+        return proxy.queryCars(id, location);
     }
 
     @Override
     public int queryCarsPrice(int id, String location) {
-        return 0;
+        return proxy.queryCarsPrice(id, location);
     }
 
     @Override
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-        return false;
+        return proxy.addRooms(id, location, numRooms, roomPrice);
     }
 
     @Override
     public boolean deleteRooms(int id, String location) {
-        return false;
+        return proxy.deleteRooms(id, location);
     }
 
     @Override
     public int queryRooms(int id, String location) {
-        return 0;
+        return proxy.queryRooms(id, location);
     }
 
     @Override
     public int queryRoomsPrice(int id, String location) {
-        return 0;
+        return proxy.queryRoomsPrice(id, location);
     }
 
     @Override
     public int newCustomer(int id) {
-        return 0;
+        return proxy.newCustomer(id);
     }
 
     @Override
     public boolean newCustomerId(int id, int customerId) {
-        return false;
+        return proxy.newCustomerId(id, customerId);
     }
 
     @Override
     public boolean deleteCustomer(int id, int customerId) {
-        return false;
+        return proxy.deleteCustomer(id, customerId);
     }
 
     @Override
     public String queryCustomerInfo(int id, int customerId) {
-        return null;
+        return proxy.queryCustomerInfo(id, customerId);
     }
 
     @Override
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        return false;
+        return proxy.reserveFlight(id, customerId, flightNumber);
     }
 
     @Override
     public boolean reserveCar(int id, int customerId, String location) {
-        return false;
+        return proxy.reserveCar(id, customerId, location);
     }
 
     @Override
     public boolean reserveRoom(int id, int customerId, String location) {
-        return false;
+        return proxy.reserveRoom(id, customerId, location);
     }
 
     @Override
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
-        return false;
+        return proxy.reserveItinerary(id, customerId, flightNumbers, location, car, room);
     }
 }

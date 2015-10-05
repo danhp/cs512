@@ -14,12 +14,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
-
     // Basic operations on RMItem //
 
     // Read a data item.
     private RMItem readData(int id, String key) {
         synchronized(m_itemHT) {
+            try {
             return (RMItem) m_itemHT.get(key);
         }
     }
@@ -433,7 +433,24 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room) {
-        return false;
+
+        // Assuming everything has to work for reserve itinerary to return true
+        boolean result = false;
+
+        for (Enumeration<Integer> e = flightNumbers.elements(); e.hasMoreElements();)
+        {
+            result = reserveFlight(id, customerId, e.nextElement());
+        }
+
+        if (car) {
+            result = reserveCar(id, customerId, location);
+        }
+
+        if (room) {
+            result = reserveRoom(id, customerId, location);
+        }
+
+        return result;
     }
 
 }
