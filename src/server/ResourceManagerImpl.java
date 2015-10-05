@@ -92,13 +92,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                                   String key, String location) {
         Trace.info("RM::reserveItem(" + id + ", " + customerId + ", "
                 + key + ", " + location + ") called.");
-        // Read customer object if it exists (and read lock it).
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-                   + key + ", " + location + ") failed: customer doesn't exist.");
-            return false;
-        }
 
         // Check if the item is available.
         ReservableItem item = (ReservableItem) readData(id, key);
@@ -111,10 +104,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + key + ", " + location + ") failed: no more items.");
             return false;
         } else {
-            // Do reservation.
-            cust.reserve(key, location, item.getPrice());
-            writeData(id, cust.getKey(), cust);
-
             // Decrease the number of available items in the storage.
             item.setCount(item.getCount() - 1);
             item.setReserved(item.getReserved() + 1);
@@ -372,6 +361,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         }
+    }
+
+    @Override
+    public Customer getCustomer(int id, int customerId) {
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        return cust;
+    }
+
+    @Override
+    public void setCustomer(int id, Customer cust) {
+        writeData(id, cust.getKey(), cust);
     }
 
     // Return data structure containing customer reservation info.

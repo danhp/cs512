@@ -16,6 +16,8 @@
 
 package server.ws;
 
+import server.Customer;
+
 import java.util.*;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
@@ -116,6 +118,12 @@ public interface ResourceManager {
     /* Remove this customer and all their associated reservations. */
     @WebMethod
     public boolean deleteCustomer(int id, int customerId); 
+
+    @WebMethod
+    public Customer getCustomer(int id, int customerId);
+
+    @WebMethod
+    public void setCustomer(int id, Customer cust);
 
     /* Return a bill. */
     @WebMethod

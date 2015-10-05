@@ -1,6 +1,9 @@
 package middleware;
 
 import middleware.ws.MiddleWare;
+import server.Customer;
+import server.Flight;
+import server.Trace;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
@@ -139,7 +142,27 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        return getFlightProxy().reserveFlight(id, customerId, flightNumber);
+        Customer cust = getCustomerProxy().getCustomer(id, customerId);
+        if (cust == null) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
+            return false;
+        }
+
+        boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
+
+        if (!reserved) {
+            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
+                    + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: flight cannot be reserved.");
+            return false;
+        }
+
+        int price = queryFlightPrice(id, flightNumber);
+        cust.reserve(Flight.getKey(flightNumber), flightNumber, price;
+
+        getCustomerProxy().setCustomer(id, cust);
+
+        return true;
     }
 
     @Override
