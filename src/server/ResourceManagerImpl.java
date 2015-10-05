@@ -131,6 +131,9 @@ public class ResourceManagerImpl {
                 map.put("success", reserveItem(incoming.id, incoming.customerId, incoming.key, incoming.key));
                 map.put("price", item2.getPrice());
                 break;
+            case 4:
+                unreserveItem(incoming.id, incoming.key, incoming.key, incoming.count);
+                break;
         }
 
         return encode(map);
@@ -158,15 +161,6 @@ public class ResourceManagerImpl {
     // Reserve an item.
     protected boolean reserveItem(int id, int customerId,
                                   String key, String location) {
-//        Trace.info("RM::reserveItem(" + id + ", " + customerId + ", "
-//                + key + ", " + location + ") called.");
-//        // Read customer object if it exists (and read lock it).
-//        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-//        if (cust == null) {
-//            Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-//                    + key + ", " + location + ") failed: customer doesn't exist.");
-//            return false;
-//        }
 
         // Check if the item is available.
         ReservableItem item = (ReservableItem) getItem(id, key);
@@ -183,9 +177,7 @@ public class ResourceManagerImpl {
             return false;
 
         } else {
-//            // Do reservation.
-//            cust.reserve(key, location, item.getPrice());
-//            writeData(id, cust.getKey(), cust);
+            // Do reservation.
             item.setReserved(item.getReserved() + 1);
 
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
@@ -194,4 +186,14 @@ public class ResourceManagerImpl {
             return true;
         }
     }
+
+    // Unreserve an item
+    protected void unreserveItem(int id, String key, String location, int count) {
+        ReservableItem item = (ReservableItem) getItem(id, key);
+
+        Trace.warn("RM::unreserveItem(" + id + ", " + count);
+
+        item.setReserved(item.getReserved() - count);
+    }
+
 }

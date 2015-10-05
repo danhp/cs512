@@ -6,12 +6,10 @@ import java.io.ObjectOutputStream;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.sql.SQLSyntaxErrorException;
-import java.util.HashMap;
-import java.util.Iterator;
-import java.util.Map;
-import java.util.Vector;
+import java.util.*;
 
 import client.TCPMessage;
+import server.ReservableItem;
 
 public class MiddleWareImpl {
 
@@ -321,8 +319,34 @@ public class MiddleWareImpl {
 
         Customer customer = map.remove(customerID);
 
-        if (customer == null) return false;
+        Object key = null;
+        for (Enumeration e = customer.getReservations().keys(); e.hasMoreElements();) {
+            key = e.nextElement();
+            middleware.ReservedItem item = (middleware.ReservedItem) customer.getReservations().get(key);
 
-        return true;
+            // Tell the rm to add items
+            TCPMessage removalMessage = new TCPMessage();
+            try {
+                int itemType = Integer.valueOf(item.getReservableItemKey());
+                removalMessage.id = id;
+                removalMessage.type = 1;
+                removalMessage.itemType = itemType;
+                removalMessage.actionType = 4;
+                removalMessage.key = item.getLocation();
+                removalMessage.count = item.getCount();
+
+                outputs[itemType].writeObject(removalMessage);
+
+                // Wait for answer.
+                TCPMessage answer = (TCPMessage) inputs[itemType].readObject();
+
+            } catch (IOException ex) {
+                System.out.println(e);
+            } catch (ClassNotFoundException ex) {
+                System.out.println(e);
+            }
+        }
+
+        return customer != null;
     }
 }
