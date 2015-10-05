@@ -20,7 +20,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-        return false;
+        return true;
     }
 
     @Override

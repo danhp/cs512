@@ -145,12 +145,12 @@
                 dest="${basedir}/webapps/${middleware.name}"/>
     </target>
 
-    <target name="start-tomcat-middleware">
+    <target name="start-tomcat-middleware" depends="build-main">
         <echo message="Starting Tomcat and deploying service ... "/>
-        <java fork="true" classname="middleware.ws.Main">
+        <java fork="true" classname="middlewaremain.Main">
             <classpath>
                 <path refid="jaxws.classpath"/>
-                <pathelement location="${basedir}/build/classes"/>
+                <pathelement location="${basedir}/build"/>
             </classpath>
             <jvmarg value="-Djava.security.policy=${basedir}/etc/server.policy"/>
             <arg value="${middleware.name}"/>
@@ -202,6 +202,16 @@
             <arg value="${middleware.host}"/>
             <arg value="${middleware.port}"/>
         </java>
+    </target>
+
+    <target name="build-main">
+        <javac
+            fork="true"
+            srcdir="${basedir}/src"
+            destdir="${basedir}/build"
+            includes="middlewaremain/**">
+            <classpath refid="jaxws.classpath"/>
+        </javac>
     </target>
 
     <target name="help">
