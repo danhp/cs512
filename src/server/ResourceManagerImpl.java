@@ -11,6 +11,9 @@ import java.io.*;
 import java.net.ServerSocket;
 import java.net.Socket;
 import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 import javax.jws.WebService;
 
 
@@ -22,7 +25,7 @@ public class ResourceManagerImpl {
     private ServerSocket serverSocket;
 
     public ResourceManagerImpl(int port) {
-        map = new HashMap<String, ReservableItem>();
+        map = new ConcurrentHashMap<>();
 
         try {
             serverSocket = new ServerSocket(port);
@@ -32,34 +35,36 @@ public class ResourceManagerImpl {
             while (true) {
                 // Accepting new connections
                 Socket clientSocket = serverSocket.accept();
+                ExecutorService exe = Executors.newCachedThreadPool();
+                exe.execute(
+                        // Span new thread to handle connection
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
 
-                // Span new thread to handle connection
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
+                                try {
+                                    ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
+                                    ObjectInputStream input = new ObjectInputStream(clientSocket.getInputStream());
 
-                        try {
-                            ObjectOutputStream output = new ObjectOutputStream(clientSocket.getOutputStream());
-                            ObjectInputStream input = new ObjectInputStream(clientSocket.getInputStream());
+                                    System.out.println("Established connection with " + clientSocket.getRemoteSocketAddress());
 
-                            System.out.println("Established connection with " + clientSocket.getRemoteSocketAddress());
+                                    while (true) {
+                                        TCPMessage incoming = (TCPMessage) input.readObject();
 
-                            while (true) {
-                                TCPMessage incoming = (TCPMessage) input.readObject();
+                                        TCPMessage outgoing = handleRequest(incoming);
+                                        output.writeObject(outgoing);
+                                    }
 
-                                TCPMessage outgoing = handleRequest(incoming);
-                                output.writeObject(outgoing);
+                                } catch (IOException e) {
+                                    System.out.println(e);
+                                } catch (ClassNotFoundException e) {
+                                    System.out.println(e);
+                                }
+
+
                             }
-
-                        } catch (IOException e) {
-                            System.out.println(e);
-                        } catch (ClassNotFoundException e) {
-                            System.out.println(e);
-                        }
-
-
-                    }
-                }).run();
+                        })
+                );
             }
         } catch (IOException e) {
             e.printStackTrace();

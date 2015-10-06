@@ -8,6 +8,8 @@ import java.net.Socket;
 import java.sql.SQLSyntaxErrorException;
 import java.util.*;
 import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.ExecutorService;
+import java.util.concurrent.Executors;
 
 import client.TCPMessage;
 import server.ReservableItem;
@@ -71,42 +73,44 @@ public class MiddleWareImpl {
             while (true) {
                 Socket socket = serverSocket.accept();
 
-                new Thread(new Runnable() {
-                    @Override
-                    public void run() {
-                        try {
-                            ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
-                            ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
+                ExecutorService exe = Executors.newCachedThreadPool();
+                exe.execute(
+                        new Thread(new Runnable() {
+                            @Override
+                            public void run() {
+                                try {
+                                    ObjectOutputStream output = new ObjectOutputStream(socket.getOutputStream());
+                                    ObjectInputStream input = new ObjectInputStream(socket.getInputStream());
 
-                            TCPMessage ackPacket = new TCPMessage();
-                            ackPacket.id = 0;
-                            ackPacket.type = 0;
-                            output.writeObject(ackPacket);
+                                    TCPMessage ackPacket = new TCPMessage();
+                                    ackPacket.id = 0;
+                                    ackPacket.type = 0;
+                                    output.writeObject(ackPacket);
 
-                            TCPMessage connectionPacket = (TCPMessage) input.readObject();
+                                    TCPMessage connectionPacket = (TCPMessage) input.readObject();
 
-                            //if HELLO
-                            if (connectionPacket.type == 0) {
-                                System.out.println("Connection established.");
-                                output.writeObject(ackPacket);
+                                    //if HELLO
+                                    if (connectionPacket.type == 0) {
+                                        System.out.println("Connection established.");
+                                        output.writeObject(ackPacket);
+                                    }
+
+                                    while (true) {
+                                        TCPMessage request = (TCPMessage) input.readObject();
+
+                                        // Do the request
+                                        TCPMessage answer = decode(request);
+
+                                        System.out.println("Received answer  " + answer);
+                                        output.writeObject(answer);
+                                    }
+                                } catch (IOException ex) {
+                                    System.out.println(ex);
+                                } catch (Exception ex) {
+                                    System.out.println(ex);
+                                }
                             }
-
-                            while (true) {
-                                TCPMessage request = (TCPMessage) input.readObject();
-
-                                // Do the request
-                                TCPMessage answer = decode(request);
-
-                                System.out.println("Received answer  " + answer);
-                                output.writeObject(answer);
-                            }
-                        } catch (IOException ex) {
-                            System.out.println(ex);
-                        } catch (Exception ex) {
-                            System.out.println(ex);
-                        }
-                    }
-                }).run();
+                        }));
             }
         } catch (IOException ex) {
             System.out.println(ex);
