@@ -115,7 +115,6 @@ public interface MiddleWare {
     @WebMethod
     public boolean reserveRoom(int id, int customerId, String location);
 
-
     /* Reserve an itinerary. */
     @WebMethod
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,

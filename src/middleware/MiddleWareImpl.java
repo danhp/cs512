@@ -1,13 +1,11 @@
 package middleware;
 
-import server.Car;
-import server.Flight;
-import server.Room;
-import server.Trace;
+import server.*;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
 import java.util.Enumeration;
+import java.util.List;
 import java.util.Vector;
 import java.net.URL;
 
@@ -24,7 +22,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     public MiddleWareImpl() {
         String hosts[] = {"localhost","localhost","localhost","localhost" };
-        int[] ports = {6000,6001,6002,6003};
+        int[] ports = {5000,5001,5002,5003};
 
         setupProxies(hosts, ports);
     }
@@ -47,6 +45,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                 URL wsdlLocation = new URL("http://" + hosts[i] + ":" + ports[i] + "/rm/service?wsdl");
                 rm = new middleware.ResourceManagerImplService(wsdlLocation);
                 proxy[i] = rm.getResourceManagerImplPort();
+
+                System.out.println("Connection established with " + hosts[i] + ":" + ports[i]);
             }
         } catch (MalformedURLException e) {
             System.out.println(e);
@@ -131,6 +131,25 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean deleteCustomer(int id, int customerId) {
+        List<Object> reservedItems = getCustomerProxy().getCustomerReservations(id, customerId);
+
+        if (reservedItems== null) { return false; }
+
+        // Increase the reserved numbers of all reservable items that
+        // the customer reserved.
+        for (int i = 0; i < reservedItems.size()/2; i++) {
+            String key = (String) reservedItems.get(i);
+            int count = (int) reservedItems.get(i + reservedItems.size()/2);
+
+            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
+                    + "deleting " + count + " reservations "
+                    + "for item " + key);
+
+            char fst = key.charAt(0);
+            middleware.ResourceManager proxy = fst == 'c' ? getCarProxy() : fst == 'f' ? getFlightProxy() : getRoomProxy();
+            proxy.unreserveItem(id, key, "", count);
+        }
+
         return getCustomerProxy().deleteCustomer(id, customerId);
     }
 
@@ -210,9 +229,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 
-        for (Enumeration<Integer> e = flightNumbers.elements(); e.hasMoreElements();)
+        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();)
         {
-            result = reserveFlight(id, customerId, e.nextElement());
+            result = reserveFlight(id, customerId, Integer.parseInt(e.nextElement()));
         }
 
         if (car) {

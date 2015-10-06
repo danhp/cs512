@@ -5,6 +5,8 @@
 
 package server;
 
+import com.sun.tools.javac.util.ArrayUtils;
+
 import java.util.*;
 import javax.jws.WebService;
 
@@ -61,6 +63,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 return false;
             }
         }
+    }
+
+    @Override
+    public void unreserveItem(int id, String key, String location, int count) {
+        ReservableItem item = (ReservableItem) readData(id, key);
+        item.setReserved(item.getReserved() - count);
+        item.setCount(item.getCount() + 1);
     }
 
     // Query the number of available seats/rooms/cars.
@@ -339,23 +348,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + customerId + ") failed: customer doesn't exist.");
             return false;
         } else {
-            // Increase the reserved numbers of all reservable items that
-            // the customer reserved.
-            RMHashtable reservationHT = cust.getReservations();
-            for (Enumeration e = reservationHT.keys(); e.hasMoreElements();) {
-                String reservedKey = (String) (e.nextElement());
-                ReservedItem reservedItem = cust.getReservedItem(reservedKey);
-                Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
-                        + "deleting " + reservedItem.getCount() + " reservations "
-                        + "for item " + reservedItem.getKey());
-                ReservableItem item =
-                        (ReservableItem) readData(id, reservedItem.getKey());
-                item.setReserved(item.getReserved() - reservedItem.getCount());
-                item.setCount(item.getCount() + reservedItem.getCount());
-                Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
-                        + reservedItem.getKey() + " reserved/available = "
-                        + item.getReserved() + "/" + item.getCount());
-            }
+
             // Remove the customer from the storage.
             removeData(id, cust.getKey());
             Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
@@ -378,7 +371,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Return data structure containing customer reservation info.
     // Returns null if the customer doesn't exist.
     // Returns empty RMHashtable if customer exists but has no reservations.
-    public RMHashtable getCustomerReservations(int id, int customerId) {
+    @Override
+    public Object[] getCustomerReservations(int id, int customerId) {
         Trace.info("RM::getCustomerReservations(" + id + ", "
                 + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -387,7 +381,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     + customerId + ") failed: customer doesn't exist.");
             return null;
         } else {
-            return cust.getReservations();
+            Collection<Object> col = new ArrayList<Object>();
+            col.addAll(cust.getReservations().keySet());
+
+            Collection<ReservedItem> ris = cust.getReservations().values();
+            for (ReservedItem ri : ris) {
+                col.add(ri.getCount());
+            }
+
+            return col.toArray();
         }
     }
 

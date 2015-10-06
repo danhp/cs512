@@ -17,6 +17,8 @@
 package server.ws;
 
 import server.Customer;
+import server.RMHashtable;
+import server.ReservedItem;
 
 import java.util.*;
 import javax.jws.WebService;
@@ -139,5 +141,11 @@ public interface ResourceManager {
 
     /* Reserve a room at this location. */
     @WebMethod
-    public boolean reserveRoom(int id, int customerId, String location); 
+    public boolean reserveRoom(int id, int customerId, String location);
+
+    @WebMethod
+    public void unreserveItem(int id, String key, String location, int count);
+
+    @WebMethod
+    public Object[] getCustomerReservations(int id, int customerId);
 }
