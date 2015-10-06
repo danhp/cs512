@@ -21,8 +21,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int CUSTOMER_PROXY_INDEX = 3;
 
     public MiddleWareImpl() {
-        String hosts[] = {"localhost","localhost","localhost","localhost" };
-        int[] ports = {5000,5001,5002,5003};
+        String hosts[] = {"142.157.165.46","142.157.165.46","142.157.165.46","localhost" };
+        int[] ports = {4000,4001,4002,4003};
 
         setupProxies(hosts, ports);
     }
