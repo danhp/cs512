@@ -303,7 +303,8 @@ public class MiddleWareImpl {
     private int addCustomer(int customerID) {
         if (customerID == 0) {
             System.out.print("Creating a new ID");
-            customerID = map.size() + 5;
+            customerID = Integer.parseInt(String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
+                    String.valueOf(Math.round(Math.random() * 100 + 1)));
         }
 
         System.out.println("Attempting to add customer: " + customerID);
