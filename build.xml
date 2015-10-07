@@ -3,13 +3,13 @@
 
     <property name="server.name" value="rm"/>
 
-    <property name="server1.host" value="142.157.165.46"/>
+    <property name="server1.host" value="142.157.165.20"/>
     <property name="server1.port" value="4000"/>
-    <property name="server2.host" value="142.157.165.46"/>
+    <property name="server2.host" value="142.157.165.20"/>
     <property name="server2.port" value="4001"/>
-    <property name="server3.host" value="142.157.165.46"/>
+    <property name="server3.host" value="142.157.165.113"/>
     <property name="server3.port" value="4002"/>
-    <property name="server4.host" value="localhost"/>
+    <property name="server4.host" value="142.157.165.113"/>
     <property name="server4.port" value="4003"/>
 
     <property name="middleware.name" value="middleware"/>
