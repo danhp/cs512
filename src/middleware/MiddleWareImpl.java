@@ -2,6 +2,7 @@ package middleware;
 
 import middleware.RMHashtable;
 import middleware.RMItem;
+import server.Car;
 import server.Flight;
 import server.Room;
 import server.Trace;
@@ -20,11 +21,11 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int CAR_PROXY_INDEX = 0;
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
-    private static int CUSTOMER_PROXY_INDEX = 3;
 
     public MiddleWareImpl() {
-        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
-        int[] ports = {4000,4001,4002,4003};
+//        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
+        String hosts[] = {"localhost","localhost","localhost" };
+        int[] ports = {4000,4001,4002};
 
         setupProxies(hosts, ports);
     }

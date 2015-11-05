@@ -16,11 +16,6 @@
 
 package server.ws;
 
-import server.Customer;
-import server.RMHashtable;
-import server.ReservedItem;
-
-import java.util.*;
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 

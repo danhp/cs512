@@ -8,19 +8,19 @@ public class Main {
     public static void main(String[] args)
             throws Exception {
 
-        if (args.length != 11) {
+        if (args.length != 9) {
             System.out.println(
-                    "Usage: java Main <service-name> <service-port> <server1-name> <server1-port> <server2-name> <server2-port> <server3-name> <server3-port> <server4-name> <server4-port> <deploy-dir>");
+                    "Usage: java Main <service-name> <service-port> <server1-name> <server1-port> <server2-name> <server2-port> <server3-name> <server3-port> <deploy-dir>");
             System.exit(-1);
         }
 
         String serviceName = args[0];
         int servicePort = Integer.parseInt(args[1]);
 
-        String hosts[] = {args[2], args[4], args[6], args[8] };
-        int ports[] = {Integer.parseInt(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[7]), Integer.parseInt(args[9]) };
+        String hosts[] = {args[2], args[4], args[6] };
+        int ports[] = {Integer.parseInt(args[3]), Integer.parseInt(args[5]), Integer.parseInt(args[7]) };
 
-        String deployDir = args[10];
+        String deployDir = args[8];
         Tomcat tomcat = new Tomcat();
 
         System.out.println("Starting server at " + tomcat.getHost().getName() + tomcat.getService().getServer().getAddress());
