@@ -1,12 +1,14 @@
 package middleware;
 
-import server.*;
+import middleware.RMHashtable;
+import middleware.RMItem;
+import server.Flight;
+import server.Room;
+import server.Trace;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
-import java.util.Enumeration;
-import java.util.List;
-import java.util.Vector;
+import java.util.*;
 import java.net.URL;
 
 @WebService(endpointInterface = "middleware.ws.MiddleWare")
@@ -57,7 +59,32 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private middleware.ResourceManager getCarProxy() { return proxy[MiddleWareImpl.CAR_PROXY_INDEX]; }
     private middleware.ResourceManager getFlightProxy() { return proxy[MiddleWareImpl.FLIGHT_PROXY_INDEX]; }
     private middleware.ResourceManager getRoomProxy() { return proxy[MiddleWareImpl.ROOM_PROXY_INDEX]; }
-    private middleware.ResourceManager getCustomerProxy() { return proxy[MiddleWareImpl.CUSTOMER_PROXY_INDEX]; }
+
+    // CUSTOMER
+
+    protected RMHashtable m_itemHT = new RMHashtable();
+
+
+    // Read a data item.
+    private RMItem readData(int id, String key) {
+        synchronized(m_itemHT) {
+            return (RMItem) m_itemHT.get(key);
+        }
+    }
+
+    // Write a data item.
+    private void writeData(int id, String key, RMItem value) {
+        synchronized(m_itemHT) {
+            m_itemHT.put(key, value);
+        }
+    }
+
+    // Remove the item out of storage.
+    protected RMItem removeData(int id, String key) {
+        synchronized(m_itemHT) {
+            return (RMItem) m_itemHT.remove(key);
+        }
+    }
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
@@ -119,48 +146,111 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         return getRoomProxy().queryRoomsPrice(id, location);
     }
 
+    // Customer operations //
+
     @Override
     public int newCustomer(int id) {
-        return getCustomerProxy().newCustomer(id);
+        Trace.info("INFO: RM::newCustomer(" + id + ") called.");
+        // Generate a globally unique Id for the new customer.
+        int customerId = Integer.parseInt(String.valueOf(id) +
+                String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
+                String.valueOf(Math.round(Math.random() * 100 + 1)));
+        Customer cust = new Customer(customerId);
+        writeData(id, cust.getKey(), cust);
+        Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
+        return customerId;
     }
 
+    // This method makes testing easier.
     @Override
     public boolean newCustomerId(int id, int customerId) {
-        return getCustomerProxy().newCustomerId(id, customerId);
+        Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        if (cust == null) {
+            cust = new Customer(customerId);
+            writeData(id, cust.getKey(), cust);
+            Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
+            return true;
+        } else {
+            Trace.info("INFO: RM::newCustomer(" + id + ", " +
+                    customerId + ") failed: customer already exists.");
+            return false;
+        }
     }
 
+    // Delete customer from the database.
     @Override
     public boolean deleteCustomer(int id, int customerId) {
-        List<Object> reservedItems = getCustomerProxy().getCustomerReservations(id, customerId);
+        Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        if (cust == null) {
+            Trace.warn("RM::deleteCustomer(" + id + ", "
+                    + customerId + ") failed: customer doesn't exist.");
+            return false;
+        } else {
 
-        if (reservedItems== null) { return false; }
-
-        // Increase the reserved numbers of all reservable items that
-        // the customer reserved.
-        for (int i = 0; i < reservedItems.size()/2; i++) {
-            String key = (String) reservedItems.get(i);
-            int count = (int) reservedItems.get(i + reservedItems.size()/2);
-
-            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + "): "
-                    + "deleting " + count + " reservations "
-                    + "for item " + key);
-
-            char fst = key.charAt(0);
-            middleware.ResourceManager proxy = fst == 'c' ? getCarProxy() : fst == 'f' ? getFlightProxy() : getRoomProxy();
-            proxy.unreserveItem(id, key, "", count);
+            // Remove the customer from the storage.
+            removeData(id, cust.getKey());
+            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
+            return true;
         }
-
-        return getCustomerProxy().deleteCustomer(id, customerId);
     }
 
+    private boolean customerExists(int id, int customerId) {
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        return (cust != null);
+    }
+
+    public void setCustomerReservation(int id, int customerId, String key, String location, int price) {
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        cust.reserve(key, location, price);
+    }
+
+    // Return data structure containing customer reservation info.
+    // Returns null if the customer doesn't exist.
+    // Returns empty RMHashtable if customer exists but has no reservations.
+    public Object[] getCustomerReservations(int id, int customerId) {
+        Trace.info("RM::getCustomerReservations(" + id + ", "
+                + customerId + ") called.");
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        if (cust == null) {
+            Trace.info("RM::getCustomerReservations(" + id + ", "
+                    + customerId + ") failed: customer doesn't exist.");
+            return null;
+        } else {
+            Collection<Object> col = new ArrayList<Object>();
+            col.addAll(cust.getReservations().keySet());
+
+            Collection<ReservedItem> ris = cust.getReservations().values();
+            for (ReservedItem ri : ris) {
+                col.add(ri.getCount());
+            }
+
+            return col.toArray();
+        }
+    }
+
+    // Return a bill.
     @Override
     public String queryCustomerInfo(int id, int customerId) {
-        return getCustomerProxy().queryCustomerInfo(id, customerId);
+        Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+        if (cust == null) {
+            Trace.warn("RM::queryCustomerInfo(" + id + ", "
+                    + customerId + ") failed: customer doesn't exist.");
+            // Returning an empty bill means that the customer doesn't exist.
+            return "";
+        } else {
+            String s = cust.printBill();
+            Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
+            System.out.println(s);
+            return s;
+        }
     }
 
     @Override
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
-        if (!getCustomerProxy().customerExists(id, customerId)) {
+        if (!customerExists(id, customerId)) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
             return false;
@@ -175,14 +265,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryFlightPrice(id, flightNumber);
-        getCustomerProxy().setCustomerReservation(id, customerId, Flight.getKey(flightNumber), String.valueOf(flightNumber), price);
+        setCustomerReservation(id, customerId, Flight.getKey(flightNumber), String.valueOf(flightNumber), price);
 
         return true;
     }
 
     @Override
     public boolean reserveCar(int id, int customerId, String location) {
-        if (!getCustomerProxy().customerExists(id, customerId)) {
+        if (!customerExists(id, customerId)) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Car.getKey(location) + ", " + location + ") failed: customer doesn't exist.");
             return false;
@@ -197,14 +287,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryCarsPrice(id, location);
-        getCustomerProxy().setCustomerReservation(id, customerId, Car.getKey(location), location, price);
+        setCustomerReservation(id, customerId, Car.getKey(location), location, price);
 
         return true;
     }
 
     @Override
     public boolean reserveRoom(int id, int customerId, String location) {
-        if (!getCustomerProxy().customerExists(id, customerId)) {
+        if (!customerExists(id, customerId)) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Room.getKey(location) + ", " + location + ") failed: customer doesn't exist.");
             return false;
@@ -219,7 +309,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryRoomsPrice(id, location);
-        getCustomerProxy().setCustomerReservation(id, customerId, Room.getKey(location), location, price);
+        setCustomerReservation(id, customerId, Room.getKey(location), location, price);
 
         return true;
     }
@@ -244,4 +334,5 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
         return result;
     }
+
 }

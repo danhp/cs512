@@ -256,7 +256,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         return queryPrice(id, Car.getKey(location));
     }
 
-
     // Room operations //
 
     // Create a new room location or add rooms to an existing location.
@@ -303,112 +302,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public int queryRoomsPrice(int id, String location) {
         return queryPrice(id, Room.getKey(location));
-    }
-
-
-    // Customer operations //
-
-    @Override
-    public int newCustomer(int id) {
-        Trace.info("INFO: RM::newCustomer(" + id + ") called.");
-        // Generate a globally unique Id for the new customer.
-        int customerId = Integer.parseInt(String.valueOf(id) +
-                String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
-                String.valueOf(Math.round(Math.random() * 100 + 1)));
-        Customer cust = new Customer(customerId);
-        writeData(id, cust.getKey(), cust);
-        Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
-        return customerId;
-    }
-
-    // This method makes testing easier.
-    @Override
-    public boolean newCustomerId(int id, int customerId) {
-        Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            cust = new Customer(customerId);
-            writeData(id, cust.getKey(), cust);
-            Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
-            return true;
-        } else {
-            Trace.info("INFO: RM::newCustomer(" + id + ", " +
-                    customerId + ") failed: customer already exists.");
-            return false;
-        }
-    }
-
-    // Delete customer from the database.
-    @Override
-    public boolean deleteCustomer(int id, int customerId) {
-        Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::deleteCustomer(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            return false;
-        } else {
-
-            // Remove the customer from the storage.
-            removeData(id, cust.getKey());
-            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
-            return true;
-        }
-    }
-
-    @Override
-    public boolean customerExists(int id, int customerId) {
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        return (cust != null);
-    }
-
-    @Override
-    public void setCustomerReservation(int id, int customerId, String key, String location, int price) {
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        cust.reserve(key, location, price);
-    }
-
-    // Return data structure containing customer reservation info.
-    // Returns null if the customer doesn't exist.
-    // Returns empty RMHashtable if customer exists but has no reservations.
-    @Override
-    public Object[] getCustomerReservations(int id, int customerId) {
-        Trace.info("RM::getCustomerReservations(" + id + ", "
-                + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.info("RM::getCustomerReservations(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            return null;
-        } else {
-            Collection<Object> col = new ArrayList<Object>();
-            col.addAll(cust.getReservations().keySet());
-
-            Collection<ReservedItem> ris = cust.getReservations().values();
-            for (ReservedItem ri : ris) {
-                col.add(ri.getCount());
-            }
-
-            return col.toArray();
-        }
-    }
-
-    // Return a bill.
-    @Override
-    public String queryCustomerInfo(int id, int customerId) {
-        Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::queryCustomerInfo(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            // Returning an empty bill means that the customer doesn't exist.
-            return "";
-        } else {
-            String s = cust.printBill();
-            Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
-            System.out.println(s);
-            return s;
-        }
     }
 
     // Add flight reservation to this customer.

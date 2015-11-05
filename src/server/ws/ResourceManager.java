@@ -106,31 +106,6 @@ public interface ResourceManager {
     @WebMethod
     public int queryRoomsPrice(int id, String location); 
 
-
-    // Customer operations //
-        
-    /* Create a new customer and return their unique identifier. */
-    @WebMethod
-    public int newCustomer(int id); 
-    
-    /* Create a new customer with the provided identifier. */
-    @WebMethod
-    public boolean newCustomerId(int id, int customerId);
-
-    /* Remove this customer and all their associated reservations. */
-    @WebMethod
-    public boolean deleteCustomer(int id, int customerId); 
-
-    @WebMethod
-    public boolean customerExists(int id, int customerId);
-
-    @WebMethod
-    public void setCustomerReservation(int id, int customerId, String key, String location, int price);
-
-    /* Return a bill. */
-    @WebMethod
-    public String queryCustomerInfo(int id, int customerId); 
-
     /* Reserve a seat on this flight. */
     @WebMethod
     public boolean reserveFlight(int id, int customerId, int flightNumber); 
@@ -145,7 +120,4 @@ public interface ResourceManager {
 
     @WebMethod
     public void unreserveItem(int id, String key, String location, int count);
-
-    @WebMethod
-    public Object[] getCustomerReservations(int id, int customerId);
 }
