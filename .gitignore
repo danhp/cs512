@@ -3,7 +3,7 @@ webapps/
 
 .DS_Store
 
-.idea/*
+.idead/*
 .iml
 
 *.class
