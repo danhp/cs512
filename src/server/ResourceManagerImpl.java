@@ -5,11 +5,17 @@
 
 package server;
 
+import sun.rmi.transport.tcp.TCPTransport;
+
 import javax.jws.WebService;
+import java.util.HashMap;
+import java.util.Map;
 
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
+
+    private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
@@ -23,19 +29,64 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     // Write a data item.
-    private void writeData(int id, String key, RMItem value) {
+    //NOTE an invalid id means that the operation will not be saved - could be used when undoing an operation
+    private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
         synchronized(m_itemHT) {
-            m_itemHT.put(key, value);
+            //add operation
+            int type = 0; // operation is overwrite
+            if (oldValue == null)
+                type = 2; // operation is add
+            Transaction t = this.transactions.get(id);
+            if (t!=null)
+              t.addOperation(new Operation(key, oldValue, type));
+
+            m_itemHT.put(key, newValue);
         }
     }
 
     // Remove the item out of storage.
-    protected RMItem removeData(int id, String key) {
+    // Invalid transaction id --> operation not saved.
+    protected RMItem removeData(int id, String key, RMItem oldValue) {
         synchronized(m_itemHT) {
+            Transaction t = this.transactions.get(id);
+            if (t != null)
+                this.transactions.get(id).addOperation(new Operation(key, oldValue, 1));
+
             return (RMItem) m_itemHT.remove(key);
         }
     }
 
+
+    // TRANSACTIONS
+    @Override
+    public void start(int id) {
+        this.transactions.put(id, new Transaction(id));
+    }
+
+    @Override
+    public void commit(int id) {
+        //nothing to do but to remove the transactions
+        this.transactions.remove(id);
+    }
+
+    @Override
+    public void abort(int id) {
+        //undo the operations
+        Transaction transaction = this.transactions.get(id);
+        for (Operation op : transaction.history()) {
+            this.undo(transaction.getId(), op);
+        }
+        this.transactions.remove(id);
+    }
+
+    // Undo `operation`
+    public void undo(int id, Operation operation) {
+        // note id=-1 so that the operation won't be saved
+        if (operation.isAdd())
+            removeData(-1, operation.getKey(), null);
+        else if (operation.isOvewrite() || operation.isDelete())
+            writeData(-1, operation.getKey(), null, operation.getItem());
+    }
 
     // Basic operations on ReservableItem //
 
@@ -50,7 +101,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return false;
         } else {
             if (curObj.getReserved() == 0) {
-                removeData(id, curObj.getKey());
+                removeData(id, curObj.getKey(), curObj);
                 Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
                 return true;
             }
@@ -135,7 +186,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Flight newObj = new Flight(flightNumber, numSeats, flightPrice);
-            writeData(id, newObj.getKey(), newObj);
+            writeData(id, newObj.getKey(), curObj, newObj);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK.");
         } else {
@@ -144,7 +195,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (flightPrice > 0) {
                 curObj.setPrice(flightPrice);
             }
-            writeData(id, curObj.getKey(), curObj);
+            writeData(id, curObj.getKey(), null, curObj);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK: "
                     + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
@@ -218,7 +269,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Car newObj = new Car(location, numCars, carPrice);
-            writeData(id, newObj.getKey(), newObj);
+            writeData(id, newObj.getKey(), curObj, newObj);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK.");
         } else {
@@ -227,7 +278,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (carPrice > 0) {
                 curObj.setPrice(carPrice);
             }
-            writeData(id, curObj.getKey(), curObj);
+            writeData(id, curObj.getKey(), null, curObj);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK: "
                     + "cars = " + curObj.getCount() + ", price = $" + carPrice);
@@ -266,7 +317,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Room newObj = new Room(location, numRooms, roomPrice);
-            writeData(id, newObj.getKey(), newObj);
+            writeData(id, newObj.getKey(), curObj, newObj);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK.");
         } else {
@@ -275,7 +326,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (roomPrice > 0) {
                 curObj.setPrice(roomPrice);
             }
-            writeData(id, curObj.getKey(), curObj);
+            writeData(id, curObj.getKey(), null, curObj);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK: "
                     + "rooms = " + curObj.getCount() + ", price = $" + roomPrice);

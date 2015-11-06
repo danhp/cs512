@@ -1,11 +1,7 @@
 package middleware;
 
-import middleware.RMHashtable;
-import middleware.RMItem;
-import server.Car;
-import server.Flight;
-import server.Room;
-import server.Trace;
+import LockManager.LockManager;
+import server.*;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
@@ -21,6 +17,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int CAR_PROXY_INDEX = 0;
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
+
+    private LockManager lm = new LockManager();
+
+    private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -65,26 +65,75 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
-
     // Read a data item.
     private RMItem readData(int id, String key) {
         synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.get(key);
+            return (server.RMItem) m_itemHT.get(key);
         }
     }
 
     // Write a data item.
-    private void writeData(int id, String key, RMItem value) {
+    //NOTE an invalid id means that the operation will not be saved - could be used when undoing an operation
+    private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
         synchronized(m_itemHT) {
-            m_itemHT.put(key, value);
+            //add operation
+            int type = 0; // operation is overwrite
+            if (oldValue == null)
+                type = 2; // operation is add
+            Transaction t = this.transactions.get(id);
+            if (t!=null)
+                t.addOperation(new Operation(key, oldValue, type));
+
+            m_itemHT.put(key, newValue);
         }
     }
 
     // Remove the item out of storage.
-    protected RMItem removeData(int id, String key) {
+    // Invalid transaction id --> operation not saved.
+    protected server.RMItem removeData(int id, String key, server.RMItem oldValue) {
         synchronized(m_itemHT) {
-            return (RMItem) m_itemHT.remove(key);
+            Transaction t = this.transactions.get(id);
+            if (t != null)
+                this.transactions.get(id).addOperation(new Operation(key, oldValue, 1));
+
+            return (server.RMItem) m_itemHT.remove(key);
         }
+    }
+
+    // TRANSACTIONS
+    @Override
+    public void start(int id) {
+        this.transactions.put(id, new Transaction(id));
+    }
+
+    @Override
+    public void commit(int id) {
+        //Unlock all
+        this.lm.UnlockAll(id);
+        this.transactions.remove(id);
+    }
+
+    @Override
+    public void abort(int id) {
+        //Unlock all
+        this.lm.UnlockAll(id);
+        this.transactions.remove(id);
+
+        //undo the operations on customer
+        Transaction transaction = this.transactions.get(id);
+        for (Operation op : transaction.history()) {
+            this.undo(transaction.getId(), op);
+        }
+        this.transactions.remove(id);
+    }
+
+    // Undo `operation`
+    public void undo(int id, Operation operation) {
+        // note id=-1 so that the operation won't be saved
+        if (operation.isAdd())
+            removeData(-1, operation.getKey(), null);
+        else if (operation.isOvewrite() || operation.isDelete())
+            writeData(-1, operation.getKey(), null, operation.getItem());
     }
 
     @Override
@@ -157,7 +206,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                 String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
                 String.valueOf(Math.round(Math.random() * 100 + 1)));
         Customer cust = new Customer(customerId);
-        writeData(id, cust.getKey(), cust);
+        writeData(id, cust.getKey(), null, cust);
         Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
         return customerId;
     }
@@ -169,7 +218,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             cust = new Customer(customerId);
-            writeData(id, cust.getKey(), cust);
+            writeData(id, cust.getKey(), null, cust);
             Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         } else {
@@ -191,7 +240,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         } else {
 
             // Remove the customer from the storage.
-            removeData(id, cust.getKey());
+            removeData(id, cust.getKey(), cust);
             Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         }

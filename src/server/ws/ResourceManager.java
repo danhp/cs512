@@ -22,7 +22,17 @@ import javax.jws.WebMethod;
 
 @WebService
 public interface ResourceManager {
-    
+
+    // Transaction operations //
+    @WebMethod
+    public void start(int id);
+
+    @WebMethod
+    public void commit(int id);
+
+    @WebMethod
+    public void abort(int id);
+
     // Flight operations //
     
     /* Add seats to a flight.  

@@ -8,6 +8,7 @@ class LockManagerTest {
 	t2 = new MyThread (lm, 2);
 	t1.start ();
 	t2.start ();
+
     }
 }
 
@@ -47,7 +48,7 @@ class MyThread extends Thread {
 	    try {
 		lm.Lock (2, "b", LockManager.READ);
 	    }
-	    catch (DeadlockException e) { 
+	    catch (DeadlockException e) {
 	        System.out.println ("Deadlock.... ");
 	    }
 

@@ -6,6 +6,16 @@ import java.util.Vector;
 
 @WebService
 public interface MiddleWare {
+    // Transaction operations //
+    @WebMethod
+    public void start(int id);
+
+    @WebMethod
+    public void commit(int id);
+
+    @WebMethod
+    public void abort(int id);
+
     // Flight operations //
 
     /* Add seats to a flight.

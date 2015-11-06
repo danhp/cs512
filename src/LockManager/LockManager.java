@@ -324,4 +324,8 @@ public class LockManager
         }
         throw new DeadlockException(waitObj.getXId(), "Sleep timeout...deadlock.");
     }
+
+    public void pretty_print() {
+        System.out.println(LockManager.lockTable);
+    }
 }
