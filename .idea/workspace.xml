@@ -1,12 +1,7 @@
 <?xml version="1.0" encoding="UTF-8"?>
 <project version="4">
   <component name="ChangeListManager">
-    <list default="true" id="804ed990-0045-415e-9366-454dd80e7642" name="Default" comment="">
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/misc.xml" afterPath="$PROJECT_DIR$/.idea/misc.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/modules.xml" afterPath="$PROJECT_DIR$/.idea/modules.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/vcs.xml" afterPath="$PROJECT_DIR$/.idea/vcs.xml" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
-    </list>
+    <list default="true" id="804ed990-0045-415e-9366-454dd80e7642" name="Default" comment="" />
     <ignored path="cs512.iws" />
     <ignored path=".idea/workspace.xml" />
     <ignored path="$PROJECT_DIR$/out/" />
@@ -27,12 +22,40 @@
   </component>
   <component name="FileEditorManager">
     <leaf>
-      <file leaf-file-name="LockManagerTest.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="LockManagerTest.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/LockManagerTest.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="-1.0621469">
-              <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="27" column="31" selection-start-line="27" selection-start-column="31" selection-end-line="27" selection-end-column="31" />
               <folding />
+            </state>
+          </provider>
+        </entry>
+      </file>
+      <file leaf-file-name="LockManager.java" pinned="false" current-in-tab="true">
+        <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
+          <provider selected="true" editor-type-id="text-editor">
+            <state vertical-scroll-proportion="-0.6346516">
+              <caret line="22" column="0" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
+              <folding>
+                <element signature="e#2091#2153#0" expanded="false" />
+                <element signature="e#2513#2531#0" expanded="false" />
+                <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
+                <element signature="e#5280#5333#0" expanded="false" />
+                <element signature="e#5541#5595#0" expanded="false" />
+                <element signature="e#6441#6486#0" expanded="false" />
+                <element signature="e#6764#6824#0" expanded="false" />
+                <element signature="e#7703#7813#0" expanded="false" />
+                <element signature="e#8690#8775#0" expanded="false" />
+                <element signature="e#8919#8995#0" expanded="false" />
+                <element signature="e#9331#9395#0" expanded="false" />
+                <element signature="e#10260#10327#0" expanded="false" />
+                <element signature="e#10711#10790#0" expanded="false" />
+                <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
+                <element signature="e#11184#11220#0" expanded="false" />
+                <element signature="e#12573#12652#0" expanded="false" />
+                <element signature="method#cleanupDeadlock#0;class#LockManager#0" expanded="false" />
+              </folding>
             </state>
           </provider>
         </entry>
@@ -52,6 +75,7 @@
       <list>
         <option value="$PROJECT_DIR$/src/LockManager/TPHashTable.java" />
         <option value="$PROJECT_DIR$/src/LockManager/LockManager.java" />
+        <option value="$PROJECT_DIR$/src/LockManagerTest.java" />
       </list>
     </option>
   </component>
@@ -160,6 +184,24 @@
             </PATH_ELEMENT>
             <PATH_ELEMENT>
               <option name="myItemId" value="middlewaremain" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+          </PATH>
+          <PATH>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="cs512" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.ProjectViewProjectNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="cs512" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="src" />
+              <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
+            </PATH_ELEMENT>
+            <PATH_ELEMENT>
+              <option name="myItemId" value="LockManager" />
               <option name="myItemType" value="com.intellij.ide.projectView.impl.nodes.PsiDirectoryNode" />
             </PATH_ELEMENT>
           </PATH>
@@ -427,10 +469,20 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="231" column="12" selection-start-line="231" selection-start-column="12" selection-end-line="231" selection-end-column="12" />
           <folding>
+            <element signature="e#2091#2153#0" expanded="false" />
+            <element signature="e#2513#2531#0" expanded="false" />
+            <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
             <element signature="e#5280#5333#0" expanded="false" />
             <element signature="e#5541#5595#0" expanded="false" />
             <element signature="e#6441#6486#0" expanded="false" />
             <element signature="e#6764#6824#0" expanded="false" />
+            <element signature="e#7703#7813#0" expanded="false" />
+            <element signature="e#8690#8775#0" expanded="false" />
+            <element signature="e#8919#8995#0" expanded="false" />
+            <element signature="e#9331#9395#0" expanded="false" />
+            <element signature="e#10260#10327#0" expanded="false" />
+            <element signature="e#10711#10790#0" expanded="false" />
+            <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
             <element signature="e#11184#11220#0" expanded="false" />
             <element signature="e#12573#12652#0" expanded="false" />
             <element signature="method#cleanupDeadlock#0;class#LockManager#0" expanded="false" />
@@ -478,22 +530,6 @@
           <caret line="22" column="8" selection-start-line="22" selection-start-column="8" selection-end-line="22" selection-end-column="8" />
           <folding>
             <element signature="imports" expanded="true" />
-          </folding>
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.36723164">
-          <caret line="62" column="24" selection-start-line="62" selection-start-column="24" selection-end-line="62" selection-end-column="24" />
-          <folding>
-            <element signature="e#5280#5333#0" expanded="false" />
-            <element signature="e#5541#5595#0" expanded="false" />
-            <element signature="e#6441#6486#0" expanded="false" />
-            <element signature="e#6764#6824#0" expanded="false" />
-            <element signature="e#11184#11220#0" expanded="false" />
-            <element signature="e#12573#12652#0" expanded="false" />
-            <element signature="method#cleanupDeadlock#0;class#LockManager#0" expanded="false" />
           </folding>
         </state>
       </provider>
@@ -548,9 +584,35 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/LockManagerTest.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="-1.0621469">
-          <caret line="2" column="6" selection-start-line="2" selection-start-column="6" selection-end-line="2" selection-end-column="6" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="27" column="31" selection-start-line="27" selection-start-column="31" selection-end-line="27" selection-end-column="31" />
           <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="-0.6346516">
+          <caret line="22" column="0" selection-start-line="22" selection-start-column="0" selection-end-line="22" selection-end-column="0" />
+          <folding>
+            <element signature="e#2091#2153#0" expanded="false" />
+            <element signature="e#2513#2531#0" expanded="false" />
+            <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
+            <element signature="e#5280#5333#0" expanded="false" />
+            <element signature="e#5541#5595#0" expanded="false" />
+            <element signature="e#6441#6486#0" expanded="false" />
+            <element signature="e#6764#6824#0" expanded="false" />
+            <element signature="e#7703#7813#0" expanded="false" />
+            <element signature="e#8690#8775#0" expanded="false" />
+            <element signature="e#8919#8995#0" expanded="false" />
+            <element signature="e#9331#9395#0" expanded="false" />
+            <element signature="e#10260#10327#0" expanded="false" />
+            <element signature="e#10711#10790#0" expanded="false" />
+            <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
+            <element signature="e#11184#11220#0" expanded="false" />
+            <element signature="e#12573#12652#0" expanded="false" />
+            <element signature="method#cleanupDeadlock#0;class#LockManager#0" expanded="false" />
+          </folding>
         </state>
       </provider>
     </entry>
