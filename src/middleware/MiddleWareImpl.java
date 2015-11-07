@@ -11,6 +11,8 @@ import java.net.URL;
 @WebService(endpointInterface = "middleware.ws.MiddleWare")
 public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
+    //TO DO: pull out TM into separate instance (class)
+
     middleware.ResourceManagerImplService rm;
     middleware.ResourceManager[] proxy;
 
@@ -18,9 +20,11 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
-    private LockManager lm = new LockManager();
-
+    //TM data structures
     private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
+    private Map<Integer, List<Transaction>> activeTransactions = new HashMap<Integer, List<Transaction>>();
+
+    private LockManager lm = new LockManager();
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -110,21 +114,32 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public void commit(int id) {
         //Unlock all
         this.lm.UnlockAll(id);
-        this.transactions.remove(id);
+//        this.enlist(id, );
     }
 
     @Override
     public void abort(int id) {
         //Unlock all
         this.lm.UnlockAll(id);
-        this.transactions.remove(id);
-
         //undo the operations on customer
         Transaction transaction = this.transactions.get(id);
         for (Operation op : transaction.history()) {
             this.undo(transaction.getId(), op);
         }
         this.transactions.remove(id);
+    }
+
+    private void enlist(int id, Transaction transaction, int rmIndex) {
+
+        //place the transaction into activeTransactions : RM -> List<Transactions>
+        List<Transaction> transactions = activeTransactions.get(rmIndex);
+        transactions.add(transaction);
+        activeTransactions.put(rmIndex, transactions);
+
+
+
+        //then send one phase commit to RM's
+
     }
 
     // Undo `operation`
