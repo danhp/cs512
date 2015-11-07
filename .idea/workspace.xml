@@ -2,20 +2,6 @@
 <project version="4">
   <component name="ChangeListManager">
     <list default="true" id="804ed990-0045-415e-9366-454dd80e7642" name="Default" comment="">
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/middleware/Operation.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/server/Operation.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/middleware/Transaction.java" />
-      <change type="NEW" beforePath="" afterPath="$PROJECT_DIR$/src/server/Transaction.java" />
-      <change type="DELETED" beforePath="$PROJECT_DIR$/src/middleware/RMItem.java" afterPath="" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/middleware/Customer.java" afterPath="$PROJECT_DIR$/src/middleware/Customer.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/LockManager/LockManager.java" afterPath="$PROJECT_DIR$/src/LockManager/LockManager.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/LockManagerTest.java" afterPath="$PROJECT_DIR$/src/LockManagerTest.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/middleware/ws/MiddleWare.java" afterPath="$PROJECT_DIR$/src/middleware/ws/MiddleWare.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/middleware/MiddleWareImpl.java" afterPath="$PROJECT_DIR$/src/middleware/MiddleWareImpl.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/server/RMItem.java" afterPath="$PROJECT_DIR$/src/server/RMItem.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/middleware/ReservedItem.java" afterPath="$PROJECT_DIR$/src/middleware/ReservedItem.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/server/ws/ResourceManager.java" afterPath="$PROJECT_DIR$/src/server/ws/ResourceManager.java" />
-      <change type="MODIFICATION" beforePath="$PROJECT_DIR$/src/server/ResourceManagerImpl.java" afterPath="$PROJECT_DIR$/src/server/ResourceManagerImpl.java" />
       <change type="MODIFICATION" beforePath="$PROJECT_DIR$/.idea/workspace.xml" afterPath="$PROJECT_DIR$/.idea/workspace.xml" />
     </list>
     <ignored path="cs512.iws" />
@@ -45,9 +31,6 @@
               <caret line="21" column="0" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#452#474#0" expanded="true" />
-                <element signature="e#1865#1866#0" expanded="true" />
-                <element signature="e#1927#1928#0" expanded="true" />
               </folding>
             </state>
           </provider>
@@ -63,14 +46,13 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="MiddleWareImpl.java" pinned="false" current-in-tab="true">
+      <file leaf-file-name="MiddleWareImpl.java" pinned="false" current-in-tab="false">
         <entry file="file://$PROJECT_DIR$/src/middleware/MiddleWareImpl.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="6.17866">
-              <caret line="348" column="24" selection-start-line="348" selection-start-column="24" selection-end-line="348" selection-end-column="24" />
+            <state vertical-scroll-proportion="0.0">
+              <caret line="22" column="39" selection-start-line="22" selection-start-column="39" selection-end-line="22" selection-end-column="39" />
               <folding>
                 <element signature="imports" expanded="true" />
-                <element signature="e#645#667#0" expanded="true" />
                 <element signature="e#3570#3571#0" expanded="true" />
                 <element signature="e#3632#3633#0" expanded="true" />
               </folding>
@@ -130,13 +112,12 @@
           </provider>
         </entry>
       </file>
-      <file leaf-file-name="LockManager.java" pinned="false" current-in-tab="false">
+      <file leaf-file-name="LockManager.java" pinned="false" current-in-tab="true">
         <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
           <provider selected="true" editor-type-id="text-editor">
-            <state vertical-scroll-proportion="0.0">
+            <state vertical-scroll-proportion="1.2084367">
               <caret line="328" column="49" selection-start-line="328" selection-start-column="49" selection-end-line="328" selection-end-column="49" />
               <folding>
-                <element signature="method#Lock#0;class#LockManager#0" expanded="false" />
                 <element signature="e#2091#2153#0" expanded="false" />
                 <element signature="e#2513#2531#0" expanded="false" />
                 <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
@@ -145,7 +126,6 @@
                 <element signature="e#6441#6486#0" expanded="false" />
                 <element signature="e#6764#6824#0" expanded="false" />
                 <element signature="e#7703#7813#0" expanded="false" />
-                <element signature="method#LockConflict#0;class#LockManager#0" expanded="false" />
                 <element signature="e#8690#8775#0" expanded="false" />
                 <element signature="e#8919#8995#0" expanded="false" />
                 <element signature="e#9331#9395#0" expanded="false" />
@@ -236,7 +216,7 @@
       <sortByType />
     </navigator>
     <panes>
-      <pane id="Scratches" />
+      <pane id="PackagesPane" />
       <pane id="ProjectPane">
         <subPane>
           <PATH>
@@ -419,8 +399,8 @@
           </PATH>
         </subPane>
       </pane>
+      <pane id="Scratches" />
       <pane id="Scope" />
-      <pane id="PackagesPane" />
     </panes>
   </component>
   <component name="PropertiesComponent">
@@ -581,26 +561,26 @@
     <frame x="4" y="23" width="1436" height="877" extended-state="6" />
     <editor active="true" />
     <layout>
+      <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
+      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="TODO" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="6" side_tool="false" content_ui="tabs" />
-      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3297362" sideWeight="0.5" order="-1" side_tool="false" content_ui="tabs" />
       <window_info id="Palette&#9;" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Event Log" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="true" content_ui="tabs" />
       <window_info id="Application Servers" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Maven Projects" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Version Control" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
-      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3297362" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Designer" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
-      <window_info id="Project" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="true" weight="0.25" sideWeight="0.5" order="0" side_tool="false" content_ui="combo" />
       <window_info id="Structure" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Ant Build" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
       <window_info id="Favorites" active="false" anchor="left" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="2" side_tool="true" content_ui="tabs" />
-      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
       <window_info id="Cvs" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="4" side_tool="false" content_ui="tabs" />
+      <window_info id="Messages" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3297362" sideWeight="0.5" order="7" side_tool="false" content_ui="tabs" />
       <window_info id="Message" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.33" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Commander" active="false" anchor="right" auto_hide="false" internal_type="SLIDING" type="SLIDING" visible="false" weight="0.4" sideWeight="0.5" order="0" side_tool="false" content_ui="tabs" />
       <window_info id="Inspection" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="5" side_tool="false" content_ui="tabs" />
+      <window_info id="Run" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3297362" sideWeight="0.5" order="2" side_tool="false" content_ui="tabs" />
       <window_info id="Hierarchy" active="false" anchor="right" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.25" sideWeight="0.5" order="2" side_tool="false" content_ui="combo" />
       <window_info id="Find" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.3297362" sideWeight="0.5" order="1" side_tool="false" content_ui="tabs" />
+      <window_info id="Debug" active="false" anchor="bottom" auto_hide="false" internal_type="DOCKED" type="DOCKED" visible="false" weight="0.4" sideWeight="0.5" order="3" side_tool="false" content_ui="tabs" />
     </layout>
   </component>
   <component name="Vcs.Log.UiProperties">
@@ -625,6 +605,105 @@
     <option name="FILTER_TARGETS" value="false" />
   </component>
   <component name="editorHistoryManager">
+    <entry file="file://$PROJECT_DIR$/src/server/ResourceManagerImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="21" column="0" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/middleware/Operation.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="12" column="39" selection-start-line="12" selection-start-column="39" selection-end-line="12" selection-end-column="39" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/middleware/MiddleWareImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+            <element signature="e#3570#3571#0" expanded="true" />
+            <element signature="e#3632#3633#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/middleware/Customer.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="13" column="33" selection-start-line="13" selection-start-column="33" selection-end-line="13" selection-end-column="33" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/server/RMItem.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="14" column="10" selection-start-line="14" selection-start-column="10" selection-end-line="14" selection-end-column="10" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/server/Car.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="8" column="13" selection-start-line="8" selection-start-column="13" selection-end-line="8" selection-end-column="13" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/middleware/ws/MiddleWare.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="8" column="0" selection-start-line="8" selection-start-column="0" selection-end-line="8" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/server/ws/ResourceManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="34" column="0" selection-start-line="34" selection-start-column="0" selection-end-line="34" selection-end-column="0" />
+          <folding />
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="328" column="49" selection-start-line="328" selection-start-column="49" selection-end-line="328" selection-end-column="49" />
+          <folding>
+            <element signature="e#2091#2153#0" expanded="false" />
+            <element signature="e#2513#2531#0" expanded="false" />
+            <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
+            <element signature="e#5280#5333#0" expanded="false" />
+            <element signature="e#5541#5595#0" expanded="false" />
+            <element signature="e#6441#6486#0" expanded="false" />
+            <element signature="e#6764#6824#0" expanded="false" />
+            <element signature="e#7703#7813#0" expanded="false" />
+            <element signature="e#8690#8775#0" expanded="false" />
+            <element signature="e#8919#8995#0" expanded="false" />
+            <element signature="e#9331#9395#0" expanded="false" />
+            <element signature="e#10260#10327#0" expanded="false" />
+            <element signature="e#10711#10790#0" expanded="false" />
+            <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
+            <element signature="e#11184#11220#0" expanded="false" />
+            <element signature="e#12573#12652#0" expanded="false" />
+            <element signature="e#14502#14503#0" expanded="true" />
+            <element signature="e#14559#14560#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
     <entry file="file://$PROJECT_DIR$/src/LockManager/XObj.java">
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.0">
@@ -670,7 +749,6 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="231" column="12" selection-start-line="231" selection-start-column="12" selection-end-line="231" selection-end-column="12" />
           <folding>
-            <element signature="method#Lock#0;class#LockManager#0" expanded="false" />
             <element signature="e#2091#2153#0" expanded="false" />
             <element signature="e#2513#2531#0" expanded="false" />
             <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
@@ -679,7 +757,6 @@
             <element signature="e#6441#6486#0" expanded="false" />
             <element signature="e#6764#6824#0" expanded="false" />
             <element signature="e#7703#7813#0" expanded="false" />
-            <element signature="method#LockConflict#0;class#LockManager#0" expanded="false" />
             <element signature="e#8690#8775#0" expanded="false" />
             <element signature="e#8919#8995#0" expanded="false" />
             <element signature="e#9331#9395#0" expanded="false" />
@@ -722,9 +799,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.39548022">
           <caret line="17" column="29" selection-start-line="17" selection-start-column="29" selection-end-line="17" selection-end-column="29" />
-          <folding>
-            <element signature="imports" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -732,9 +806,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.6214689">
           <caret line="22" column="8" selection-start-line="22" selection-start-column="8" selection-end-line="22" selection-end-column="8" />
-          <folding>
-            <element signature="imports" expanded="false" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -766,7 +837,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="-0.16949153">
           <caret line="0" column="0" selection-start-line="0" selection-start-column="0" selection-end-line="0" selection-end-column="0" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -774,7 +844,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.11299435">
           <caret line="5" column="13" selection-start-line="5" selection-start-column="13" selection-end-line="5" selection-end-column="13" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -791,35 +860,6 @@
         <state vertical-scroll-proportion="0.0">
           <caret line="6" column="13" selection-start-line="6" selection-start-column="13" selection-end-line="6" selection-end-column="13" />
           <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="328" column="49" selection-start-line="328" selection-start-column="49" selection-end-line="328" selection-end-column="49" />
-          <folding>
-            <element signature="method#Lock#0;class#LockManager#0" expanded="false" />
-            <element signature="e#2091#2153#0" expanded="false" />
-            <element signature="e#2513#2531#0" expanded="false" />
-            <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
-            <element signature="e#5280#5333#0" expanded="false" />
-            <element signature="e#5541#5595#0" expanded="false" />
-            <element signature="e#6441#6486#0" expanded="false" />
-            <element signature="e#6764#6824#0" expanded="false" />
-            <element signature="e#7703#7813#0" expanded="false" />
-            <element signature="method#LockConflict#0;class#LockManager#0" expanded="false" />
-            <element signature="e#8690#8775#0" expanded="false" />
-            <element signature="e#8919#8995#0" expanded="false" />
-            <element signature="e#9331#9395#0" expanded="false" />
-            <element signature="e#10260#10327#0" expanded="false" />
-            <element signature="e#10711#10790#0" expanded="false" />
-            <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
-            <element signature="e#11184#11220#0" expanded="false" />
-            <element signature="e#12573#12652#0" expanded="false" />
-            <element signature="e#14502#14503#0" expanded="true" />
-            <element signature="e#14559#14560#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -851,7 +891,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.2542373">
           <caret line="12" column="22" selection-start-line="12" selection-start-column="22" selection-end-line="12" selection-end-column="22" />
-          <folding />
         </state>
       </provider>
     </entry>
@@ -867,20 +906,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.40942928">
           <caret line="22" column="52" selection-start-line="22" selection-start-column="52" selection-end-line="22" selection-end-column="52" />
-          <folding />
-        </state>
-      </provider>
-    </entry>
-    <entry file="file://$PROJECT_DIR$/src/server/ResourceManagerImpl.java">
-      <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="0.0">
-          <caret line="21" column="0" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#452#474#0" expanded="true" />
-            <element signature="e#1865#1866#0" expanded="true" />
-            <element signature="e#1927#1928#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -888,18 +913,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.29776675">
           <caret line="16" column="0" selection-start-line="16" selection-start-column="0" selection-end-line="16" selection-end-column="0" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#220#231#0" expanded="true" />
-            <element signature="e#267#268#0" expanded="true" />
-            <element signature="e#295#296#0" expanded="true" />
-            <element signature="e#341#342#0" expanded="true" />
-            <element signature="e#377#378#0" expanded="true" />
-            <element signature="e#417#418#0" expanded="true" />
-            <element signature="e#447#448#0" expanded="true" />
-            <element signature="e#545#546#0" expanded="true" />
-            <element signature="e#593#594#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -907,10 +920,6 @@
       <provider selected="true" editor-type-id="text-editor">
         <state vertical-scroll-proportion="0.27915633">
           <caret line="17" column="29" selection-start-line="17" selection-start-column="29" selection-end-line="17" selection-end-column="29" />
-          <folding>
-            <element signature="imports" expanded="true" />
-            <element signature="e#224#235#0" expanded="true" />
-          </folding>
         </state>
       </provider>
     </entry>
@@ -942,13 +951,49 @@
     </entry>
     <entry file="file://$PROJECT_DIR$/src/middleware/MiddleWareImpl.java">
       <provider selected="true" editor-type-id="text-editor">
-        <state vertical-scroll-proportion="6.17866">
-          <caret line="348" column="24" selection-start-line="348" selection-start-column="24" selection-end-line="348" selection-end-column="24" />
+        <state vertical-scroll-proportion="0.0">
+          <caret line="22" column="39" selection-start-line="22" selection-start-column="39" selection-end-line="22" selection-end-column="39" />
           <folding>
             <element signature="imports" expanded="true" />
-            <element signature="e#645#667#0" expanded="true" />
             <element signature="e#3570#3571#0" expanded="true" />
             <element signature="e#3632#3633#0" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/server/ResourceManagerImpl.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="0.0">
+          <caret line="21" column="0" selection-start-line="21" selection-start-column="0" selection-end-line="21" selection-end-column="0" />
+          <folding>
+            <element signature="imports" expanded="true" />
+          </folding>
+        </state>
+      </provider>
+    </entry>
+    <entry file="file://$PROJECT_DIR$/src/LockManager/LockManager.java">
+      <provider selected="true" editor-type-id="text-editor">
+        <state vertical-scroll-proportion="1.2084367">
+          <caret line="328" column="49" selection-start-line="328" selection-start-column="49" selection-end-line="328" selection-end-column="49" />
+          <folding>
+            <element signature="e#2091#2153#0" expanded="false" />
+            <element signature="e#2513#2531#0" expanded="false" />
+            <element signature="method#UnlockAll#0;class#LockManager#0" expanded="false" />
+            <element signature="e#5280#5333#0" expanded="false" />
+            <element signature="e#5541#5595#0" expanded="false" />
+            <element signature="e#6441#6486#0" expanded="false" />
+            <element signature="e#6764#6824#0" expanded="false" />
+            <element signature="e#7703#7813#0" expanded="false" />
+            <element signature="e#8690#8775#0" expanded="false" />
+            <element signature="e#8919#8995#0" expanded="false" />
+            <element signature="e#9331#9395#0" expanded="false" />
+            <element signature="e#10260#10327#0" expanded="false" />
+            <element signature="e#10711#10790#0" expanded="false" />
+            <element signature="method#WaitLock#0;class#LockManager#0" expanded="false" />
+            <element signature="e#11184#11220#0" expanded="false" />
+            <element signature="e#12573#12652#0" expanded="false" />
+            <element signature="e#14502#14503#0" expanded="true" />
+            <element signature="e#14559#14560#0" expanded="true" />
           </folding>
         </state>
       </provider>
