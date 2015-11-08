@@ -1,6 +1,7 @@
 package middleware;
 
 import LockManager.LockManager;
+import TransactionManager.TransactionManagerImpl;
 import server.*;
 
 import javax.jws.WebService;
@@ -11,8 +12,6 @@ import java.net.URL;
 @WebService(endpointInterface = "middleware.ws.MiddleWare")
 public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
-    //TO DO: pull out TM into separate instance (class)
-
     middleware.ResourceManagerImplService rm;
     middleware.ResourceManager[] proxy;
 
@@ -20,9 +19,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
-    //TM data structures
-    private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
-    private Map<Integer, List<Transaction>> activeTransactions = new HashMap<Integer, List<Transaction>>();
+    private TransactionManagerImpl transactionManager = new TransactionManagerImpl();
 
     private LockManager lm = new LockManager();
 
@@ -84,7 +81,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             int type = 0; // operation is overwrite
             if (oldValue == null)
                 type = 2; // operation is add
-            Transaction t = this.transactions.get(id);
+            Transaction t = this.transactionManager.getTransaction(id);
             if (t!=null)
                 t.addOperation(new Operation(key, oldValue, type));
 
@@ -96,9 +93,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // Invalid transaction id --> operation not saved.
     protected server.RMItem removeData(int id, String key, server.RMItem oldValue) {
         synchronized(m_itemHT) {
-            Transaction t = this.transactions.get(id);
+            Transaction t = this.transactionManager.getTransaction(id);
             if (t != null)
-                this.transactions.get(id).addOperation(new Operation(key, oldValue, 1));
+                this.transactionManager.getTransaction(id).addOperation(new Operation(key, oldValue, 1));
 
             return (server.RMItem) m_itemHT.remove(key);
         }
@@ -107,40 +104,28 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // TRANSACTIONS
     @Override
     public void start(int id) {
-        this.transactions.put(id, new Transaction(id));
+        transactionManager.start(id);
     }
 
     @Override
     public void commit(int id) {
-        //Unlock all
+        transactionManager.commit(id);
         this.lm.UnlockAll(id);
-//        this.enlist(id, );
     }
 
     @Override
     public void abort(int id) {
-        //Unlock all
+        transactionManager.abort(id);
+
         this.lm.UnlockAll(id);
         //undo the operations on customer
-        Transaction transaction = this.transactions.get(id);
+        Transaction transaction = this.transactionManager.getTransaction(id);
         for (Operation op : transaction.history()) {
             this.undo(transaction.getId(), op);
         }
-        this.transactions.remove(id);
+        this.transactionManager.removeTransaction(id);
     }
 
-    private void enlist(int id, Transaction transaction, int rmIndex) {
-
-        //place the transaction into activeTransactions : RM -> List<Transactions>
-        List<Transaction> transactions = activeTransactions.get(rmIndex);
-        transactions.add(transaction);
-        activeTransactions.put(rmIndex, transactions);
-
-
-
-        //then send one phase commit to RM's
-
-    }
 
     // Undo `operation`
     public void undo(int id, Operation operation) {

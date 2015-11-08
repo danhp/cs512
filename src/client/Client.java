@@ -681,6 +681,10 @@ public class Client extends WSClient {
                     }
                     break;
                 case 25: //abort
+                    if (!isActive) {
+                        System.out.println("Nothing to abort");
+                        break;
+                    }
                     if (arguments.size() != 2) {
                         wrongNumber();
                         break;
