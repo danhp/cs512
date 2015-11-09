@@ -84,11 +84,6 @@ public class Client extends WSClient {
                 break;
 
             case 2:  //new flight
-                //have not said start - invalid input
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 5) {
                     wrongNumber();
                     break;
@@ -117,10 +112,6 @@ public class Client extends WSClient {
                 break;
 
             case 3:  //new car
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 5) {
                     wrongNumber();
                     break;
@@ -148,10 +139,6 @@ public class Client extends WSClient {
                 break;
 
             case 4:  //new room
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 5) {
                     wrongNumber();
                     break;
@@ -179,10 +166,6 @@ public class Client extends WSClient {
                 break;
 
             case 5:  //new Customer
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 2) {
                     wrongNumber();
                     break;
@@ -201,10 +184,6 @@ public class Client extends WSClient {
                 break;
 
             case 6: //delete Flight
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -228,10 +207,6 @@ public class Client extends WSClient {
                 break;
 
             case 7: //delete car
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -255,10 +230,7 @@ public class Client extends WSClient {
                 break;
 
             case 8: //delete room
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -282,10 +254,7 @@ public class Client extends WSClient {
                 break;
 
             case 9: //delete Customer
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -309,10 +278,7 @@ public class Client extends WSClient {
                 break;
 
             case 10: //querying a flight
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -333,10 +299,7 @@ public class Client extends WSClient {
                 break;
 
             case 11: //querying a car Location
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -358,10 +321,7 @@ public class Client extends WSClient {
                 break;
 
             case 12: //querying a room location
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -383,10 +343,7 @@ public class Client extends WSClient {
                 break;
 
             case 13: //querying Customer Information
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -408,10 +365,7 @@ public class Client extends WSClient {
                 break;
 
             case 14: //querying a flight Price
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -433,10 +387,7 @@ public class Client extends WSClient {
                 break;
 
             case 15: //querying a car Price
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -458,10 +409,7 @@ public class Client extends WSClient {
                 break;
 
             case 16: //querying a room price
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -483,10 +431,7 @@ public class Client extends WSClient {
                 break;
 
             case 17:  //reserve a flight
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 4) {
                     wrongNumber();
                     break;
@@ -512,10 +457,7 @@ public class Client extends WSClient {
                 break;
 
             case 18:  //reserve a car
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 4) {
                     wrongNumber();
                     break;
@@ -541,10 +483,7 @@ public class Client extends WSClient {
                 break;
 
             case 19:  //reserve a room
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 4) {
                     wrongNumber();
                     break;
@@ -570,10 +509,7 @@ public class Client extends WSClient {
                 break;
 
             case 20:  //reserve an Itinerary
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size()<7) {
                     wrongNumber();
                     break;
@@ -617,10 +553,7 @@ public class Client extends WSClient {
                 return;
 
             case 22:  //new Customer given id
-                if (!isActive) {
-                    System.out.println("Client is inactive, must activate using 'start' command");
-                    break;
-                }
+
                 if (arguments.size() != 3) {
                     wrongNumber();
                     break;
@@ -661,10 +594,7 @@ public class Client extends WSClient {
                     }
                     break;
                 case 24: //start
-                    if (isActive) {
-                        System.out.println("Client is already active");
-                        break;
-                    }
+
                     if (arguments.size() != 2) {
                         wrongNumber();
                         break;

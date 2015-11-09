@@ -1,7 +1,7 @@
 package middleware;
 
 import LockManager.LockManager;
-import TransactionManager.TransactionManagerImpl;
+import middleware.ws.MiddleWare;
 import server.*;
 
 import javax.jws.WebService;
@@ -19,9 +19,11 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
-    private TransactionManagerImpl transactionManager = new TransactionManagerImpl();
+    private static int OVERWRITE = 0;
+    private static int DELETE = 1;
+    private static int ADD_NEW = 2;
 
-    private LockManager lm = new LockManager();
+    private TransactionManagerImpl transactionManager;
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -38,6 +40,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         setupProxies(hosts, ports);
+        transactionManager = new TransactionManagerImpl(this, getCarProxy(), getFlightProxy(), getRoomProxy());
     }
 
     public void setupProxies(String[] hosts, int[] ports)
@@ -78,9 +81,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
         synchronized(m_itemHT) {
             //add operation
-            int type = 0; // operation is overwrite
+            int type = OVERWRITE; // operation is overwrite
             if (oldValue == null)
-                type = 2; // operation is add
+                type = ADD_NEW; // operation is add
             Transaction t = this.transactionManager.getTransaction(id);
             if (t!=null)
                 t.addOperation(new Operation(key, oldValue, type));
@@ -95,13 +98,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized(m_itemHT) {
             Transaction t = this.transactionManager.getTransaction(id);
             if (t != null)
-                this.transactionManager.getTransaction(id).addOperation(new Operation(key, oldValue, 1));
+                this.transactionManager.getTransaction(id).addOperation(new Operation(key, oldValue, DELETE));
 
             return (server.RMItem) m_itemHT.remove(key);
         }
     }
 
-    // TRANSACTIONS
     @Override
     public void start(int id) {
         transactionManager.start(id);
@@ -110,22 +112,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public void commit(int id) {
         transactionManager.commit(id);
-        this.lm.UnlockAll(id);
     }
 
     @Override
     public void abort(int id) {
         transactionManager.abort(id);
-
-        this.lm.UnlockAll(id);
-        //undo the operations on customer
-        Transaction transaction = this.transactionManager.getTransaction(id);
-        for (Operation op : transaction.history()) {
-            this.undo(transaction.getId(), op);
-        }
-        this.transactionManager.removeTransaction(id);
     }
-
 
     // Undo `operation`
     public void undo(int id, Operation operation) {
@@ -136,13 +128,16 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             writeData(-1, operation.getKey(), null, operation.getItem());
     }
 
+
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
+        transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
         return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
+        transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
         return getFlightProxy().deleteFlight(id, flightNumber);
     }
 
@@ -158,11 +153,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
+        transactionManager.enlist(id, CAR_PROXY_INDEX);
         return getCarProxy().addCars(id, location, numCars, carPrice);
     }
 
     @Override
     public boolean deleteCars(int id, String location) {
+        transactionManager.enlist(id, CAR_PROXY_INDEX);
         return getCarProxy().deleteCars(id, location);
     }
 
@@ -178,11 +175,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        transactionManager.enlist(id, ROOM_PROXY_INDEX);
         return getRoomProxy().addRooms(id, location, numRooms, roomPrice);
     }
 
     @Override
     public boolean deleteRooms(int id, String location) {
+        transactionManager.enlist(id, ROOM_PROXY_INDEX);
         return getRoomProxy().deleteRooms(id, location);
     }
 
@@ -385,4 +384,94 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         return result;
     }
 
+}
+
+public class TransactionManagerImpl {
+
+    private Map<Integer, List<Integer>> activeTransactions = new HashMap<Integer, List<Integer>>();
+    private List<Transaction> transactions;
+
+    private MiddleWareImpl middleware;
+    private middleware.ResourceManager carProxy;
+    private middleware.ResourceManager flightProxy;
+    private middleware.ResourceManager roomProxy;
+
+    private static int CAR_PROXY_INDEX = 0;
+    private static int FLIGHT_PROXY_INDEX = 1;
+    private static int ROOM_PROXY_INDEX = 2;
+
+    private LockManager lm = new LockManager();
+
+    public TransactionManagerImpl(MiddleWareImpl middleware,
+                                  middleware.ResourceManager carProxy,
+                                  middleware.ResourceManager flightProxy,
+                                  middleware.ResourceManager roomProxy ) {
+        this.middleware = middleware;
+        this.carProxy = carProxy;
+        this.flightProxy = flightProxy;
+        this.roomProxy = roomProxy;
+
+        transactions = new ArrayList<Transaction>();
+    }
+
+    public void start(int id) {
+        this.transactions.add(new Transaction(id));
+        this.activeTransactions.put(id, new ArrayList<Integer>());
+    }
+
+    public void commit(int id) {
+        //Unlock all
+        this.lm.UnlockAll(id);
+        //remove and place into active transactions
+        this.transactions.remove(id);
+
+        for (Integer rm : activeTransactions.get(id)) {
+            commitToRM(id, rm);
+        }
+    }
+
+    public void abort(int id) {
+        //Unlock all
+        this.lm.UnlockAll(id);
+
+        //undo the operations on customer
+        Transaction transaction = this.transactions.get(id);
+        for (Operation op : transaction.history()) {
+            middleware.undo(transaction.getId(), op);
+        }
+        this.transactions.remove(id);
+
+        for (Integer rm : activeTransactions.get(id)) {
+            abortToRM(id, rm);
+        }
+    }
+
+    private void commitToRM(int id, int rmIndex) {
+        if (rmIndex == CAR_PROXY_INDEX) {
+            carProxy.commit(id);
+        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
+            flightProxy.commit(id);
+        } else {
+            roomProxy.commit(id);
+        }
+    }
+
+    private void abortToRM(int id, int rmIndex) {
+        if (rmIndex == CAR_PROXY_INDEX) {
+            carProxy.abort(id);
+        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
+            flightProxy.abort(id);
+        } else {
+            roomProxy.abort(id);
+        }
+    }
+
+    public void enlist(int id, int rmIndex) {
+        //add operation to transaction with Id
+        List<Integer> proxies = activeTransactions.get(id);
+        if (!proxies.contains(rmIndex)) {
+            proxies.add(rmIndex);
+        }
+
+    }
 }

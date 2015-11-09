@@ -6,7 +6,7 @@ package server;
 public class Operation {
     private String key;
     private RMItem item;
-    private int type;       //0-overwrite, 1-delete, 2-write new
+    private int type;       //0-overwrite, 1-delete, 2-write new, 3 - READ
 
     public Operation(String key, RMItem item) {
         this.key = key;
@@ -22,6 +22,7 @@ public class Operation {
     public boolean isOvewrite() { return this.type == 0; }
     public boolean isDelete() { return this.type == 1; }
     public boolean isAdd() { return this.type == 2; }
+    public boolean isRead() { return this.type == 3; }
 
     public String getKey() { return this.key; }
     public RMItem getItem() { return this.item; }
