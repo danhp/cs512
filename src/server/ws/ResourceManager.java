@@ -125,4 +125,7 @@ public interface ResourceManager {
 
     @WebMethod
     public void unreserveItem(int id, String key, String location, int count);
+
+    @WebMethod
+    public boolean shutdown();
 }

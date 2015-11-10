@@ -18,9 +18,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
-    private LockManager lm = new LockManager();
-
-    private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
+    private TransactionManager tm = new TransactionManager();
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -63,68 +61,51 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // CUSTOMER
 
-    protected RMHashtable m_itemHT = new RMHashtable();
+    protected RMHashtable customerHT = new RMHashtable();
+    private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
 
     // Read a data item.
-    private RMItem readData(int id, String key) {
-        synchronized(m_itemHT) {
-            return (server.RMItem) m_itemHT.get(key);
+    private RMItem readData(int transactionID, String key) {
+        synchronized(customerHT) {
+            Map<String, RMItem> set = writeSet.get(transactionID);
+
+            if (set.containsKey(key)) {
+                return set.get(key);
+            } else {
+                return (RMItem) customerHT.get(key);
+            }
         }
     }
 
     // Write a data item.
-    //NOTE an invalid id means that the operation will not be saved - could be used when undoing an operation
     private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
-        synchronized(m_itemHT) {
-            //add operation
-            int type = 0; // operation is overwrite
-            if (oldValue == null)
-                type = 2; // operation is add
-            Transaction t = this.transactions.get(id);
-            if (t!=null)
-                t.addOperation(new Operation(key, oldValue, type));
-
-            m_itemHT.put(key, newValue);
+        synchronized(customerHT) {
+            customerHT.put(key, newValue);
         }
     }
 
     // Remove the item out of storage.
-    // Invalid transaction id --> operation not saved.
     protected server.RMItem removeData(int id, String key, server.RMItem oldValue) {
-        synchronized(m_itemHT) {
-            Transaction t = this.transactions.get(id);
-            if (t != null)
-                this.transactions.get(id).addOperation(new Operation(key, oldValue, 1));
-
-            return (server.RMItem) m_itemHT.remove(key);
+        synchronized(customerHT) {
+            return (server.RMItem) customerHT.remove(key);
         }
     }
 
     // TRANSACTIONS
     @Override
     public void start(int id) {
-        this.transactions.put(id, new Transaction(id));
+        this.tm.start(id);
+//        this.transactions.put(id, new Transaction(id));
     }
 
     @Override
     public void commit(int id) {
-        //Unlock all
-        this.lm.UnlockAll(id);
-        this.transactions.remove(id);
+        this.tm.commit(id);
     }
 
     @Override
     public void abort(int id) {
-        //Unlock all
-        this.lm.UnlockAll(id);
-        this.transactions.remove(id);
-
-        //undo the operations on customer
-        Transaction transaction = this.transactions.get(id);
-        for (Operation op : transaction.history()) {
-            this.undo(transaction.getId(), op);
-        }
-        this.transactions.remove(id);
+        this.tm.abort(id);
     }
 
     // Undo `operation`
@@ -369,8 +350,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 
-        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();)
-        {
+        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();) {
             result = reserveFlight(id, customerId, Integer.parseInt(e.nextElement()));
         }
 
@@ -385,4 +365,19 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         return result;
     }
 
+    @Override
+    public boolean shutdown() {
+        // Check that no transaction are running.
+        if (tm.isActive()) return false;
+
+        // Shutdown all the RMs
+        this.getCarProxy().shutdown();
+        this.getFlightProxy().shutdown();
+        this.getRoomProxy().shutdown();
+
+        // Shutdown the middleware
+        System.exit(0);
+
+        return true;
+    }
 }

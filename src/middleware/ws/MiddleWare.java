@@ -130,4 +130,6 @@ public interface MiddleWare {
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers,
                                     String location, boolean car, boolean room);
 
+    @WebMethod
+    public boolean shutdown();
 }
