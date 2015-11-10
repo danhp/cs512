@@ -115,11 +115,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean commit(int id) {
+        lockManager.UnlockAll(id);
         return transactionManager.commit(id);
     }
 
     @Override
     public boolean abort(int id) {
+        lockManager.UnlockAll(id);
         return transactionManager.abort(id);
     }
 
@@ -138,7 +140,6 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         try {
             lockManager.pretty_print();
             if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
-                Trace.info("Just got the lock");
                 transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
                 return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
             }
@@ -151,18 +152,44 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
-        transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-        return getFlightProxy().deleteFlight(id, flightNumber);
+        try {
+            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
+                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+                return getFlightProxy().deleteFlight(id, flightNumber);
+            }
+        } catch (DeadlockException e) {
+            Trace.warn("Deadlock");
+            transactionManager.abort(id);
+        }
+        return false;
     }
 
     @Override
     public int queryFlight(int id, int flightNumber) {
-        return getFlightProxy().queryFlight(id, flightNumber);
+        try {
+            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
+                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+                return getFlightProxy().queryFlight(id, flightNumber);
+            }
+        } catch (DeadlockException e) {
+            Trace.warn("Deadlock");
+            transactionManager.abort(id);
+        }
+        return -1;
     }
 
     @Override
     public int queryFlightPrice(int id, int flightNumber) {
-        return getFlightProxy().queryFlightPrice(id, flightNumber);
+        try {
+            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
+                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+                return getFlightProxy().queryFlightPrice(id, flightNumber);
+            }
+        } catch (DeadlockException e) {
+            Trace.warn("Deadlock");
+            transactionManager.abort(id);
+        }
+        return -1;
     }
 
     @Override
