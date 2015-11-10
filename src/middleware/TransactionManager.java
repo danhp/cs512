@@ -48,6 +48,11 @@ public class TransactionManager {
     }
 
     public boolean commit(int id) {
+        if (getTransaction(id) == null) {
+            Trace.error("Commit: Transaction with ID: " + id + " does not exist");
+            return false;
+        }
+
         //Unlock all
         if (this.lm.UnlockAll(id)) {
 
@@ -66,6 +71,10 @@ public class TransactionManager {
     }
 
     public boolean abort(int id) {
+        if (getTransaction(id) == null) {
+            Trace.error("Abort: Transaction with ID: " + id + " does not exist");
+            return false;
+        }
         //Unlock all
         this.lm.UnlockAll(id);
 
@@ -119,6 +128,10 @@ public class TransactionManager {
     public void enlist(int id, int rmIndex) {
         //add operation to transaction with Id
         List<Integer> proxies = activeTransactions.get(id);
+        if (proxies == null) {
+            Trace.error("Enlist: Transaction with ID: " + id + " does not exist");
+            return;
+        }
         if (!proxies.contains(rmIndex)) {
             proxies.add(rmIndex);
             startToRM(id, rmIndex);
