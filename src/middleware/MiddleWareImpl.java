@@ -18,7 +18,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
-    private TransactionManager tm = new TransactionManager();
+    private TransactionManager tm = new TransactionManager(this);
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -55,14 +55,15 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
 
-    private middleware.ResourceManager getCarProxy() { return proxy[MiddleWareImpl.CAR_PROXY_INDEX]; }
-    private middleware.ResourceManager getFlightProxy() { return proxy[MiddleWareImpl.FLIGHT_PROXY_INDEX]; }
-    private middleware.ResourceManager getRoomProxy() { return proxy[MiddleWareImpl.ROOM_PROXY_INDEX]; }
+    protected middleware.ResourceManager getCarProxy() { return proxy[MiddleWareImpl.CAR_PROXY_INDEX]; }
+    protected middleware.ResourceManager getFlightProxy() { return proxy[MiddleWareImpl.FLIGHT_PROXY_INDEX]; }
+    protected middleware.ResourceManager getRoomProxy() { return proxy[MiddleWareImpl.ROOM_PROXY_INDEX]; }
 
     // CUSTOMER
 
     protected RMHashtable customerHT = new RMHashtable();
     private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
+    private LockManager lm = new LockManager();
 
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
@@ -78,43 +79,74 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
     // Write a data item.
-    private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
+    private void writeData(int transactionID, String key, RMItem newValue, boolean commit) {
         synchronized(customerHT) {
-            customerHT.put(key, newValue);
+            if (commit) {
+                customerHT.put(key, newValue);
+            } else {
+                writeSet.get(transactionID).put(key, newValue);
+            }
         }
     }
 
     // Remove the item out of storage.
-    protected server.RMItem removeData(int id, String key, server.RMItem oldValue) {
+    protected void removeData(int transactionID, String key, boolean commit) {
         synchronized(customerHT) {
-            return (server.RMItem) customerHT.remove(key);
+            if (commit) {
+                customerHT.remove(key);
+            } else {
+                // set to null to remove
+                // TODO: don't use null?
+                writeSet.get(transactionID).put(key, null);
+            }
         }
+    }
+
+    // CUSTOMER TRANSACTIONS HELPERS
+    public void startCustomer(int transactionID) {
+        if (writeSet.containsKey(transactionID)) return;
+
+        writeSet.put(transactionID, new HashMap<String, RMItem>());
+    }
+
+    public void commitCustomer(int transactionID) {
+        if (!writeSet.containsKey(transactionID)) return;
+
+        for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
+            this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+        }
+    }
+
+    public void abortCustomer(int transactionID) {
+        if (!writeSet.containsKey(transactionID)) return;
+        this.writeSet.remove(transactionID);
+    }
+
+    // CUSTOMER LOCK HELPERS
+    public boolean requestLock(int transactionID) {
+
+        return true;
+    }
+
+    public boolean unlockAll(int transactionID) {
+        this.lm.UnlockAll(transactionID);
+        return true;
     }
 
     // TRANSACTIONS
     @Override
-    public void start(int id) {
-        this.tm.start(id);
-//        this.transactions.put(id, new Transaction(id));
+    public int start() {
+        return this.tm.start();
     }
 
     @Override
-    public void commit(int id) {
-        this.tm.commit(id);
+    public boolean commit(int id) {
+        return this.tm.commit(id);
     }
 
     @Override
-    public void abort(int id) {
-        this.tm.abort(id);
-    }
-
-    // Undo `operation`
-    public void undo(int id, Operation operation) {
-        // note id=-1 so that the operation won't be saved
-        if (operation.isAdd())
-            removeData(-1, operation.getKey(), null);
-        else if (operation.isOvewrite() || operation.isDelete())
-            writeData(-1, operation.getKey(), null, operation.getItem());
+    public boolean abort(int id) {
+        return this.tm.abort(id);
     }
 
     @Override
@@ -187,7 +219,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                 String.valueOf(Calendar.getInstance().get(Calendar.MILLISECOND)) +
                 String.valueOf(Math.round(Math.random() * 100 + 1)));
         Customer cust = new Customer(customerId);
-        writeData(id, cust.getKey(), null, cust);
+        writeData(id, cust.getKey(), cust, false);
         Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
         return customerId;
     }
@@ -199,7 +231,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             cust = new Customer(customerId);
-            writeData(id, cust.getKey(), null, cust);
+            writeData(id, cust.getKey(), cust, false);
             Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         } else {
@@ -221,7 +253,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         } else {
 
             // Remove the customer from the storage.
-            removeData(id, cust.getKey(), cust);
+            removeData(id, cust.getKey(), false);
             Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         }

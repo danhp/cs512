@@ -51,11 +51,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
+        if (writeSet.containsKey(transactionID)) return;
+
         writeSet.put(transactionID, new HashMap<String, RMItem>());
     }
 
     @Override
     public void commit(int transactionID) {
+        if (!writeSet.containsKey(transactionID)) return;
+
         for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
             this.writeData(transactionID, entry.getKey(), entry.getValue(), entry.getValue());
         }
@@ -63,6 +67,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void abort(int transactionID) {
+        if (!writeSet.containsKey(transactionID)) return;
+
         this.writeSet.remove(transactionID);
     }
 

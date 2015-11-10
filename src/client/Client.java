@@ -3,7 +3,6 @@ package client;
 import java.util.*;
 import java.io.*;
 
-
 public class Client extends WSClient {
 
     public Client(String serviceName, String serviceHost, int servicePort)
@@ -559,6 +558,85 @@ public class Client extends WSClient {
                 }
                 break;
 
+            case 23: // Start a new transaction
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Starting a new transaction");
+                try {
+                    int transactionID = proxy.start();
+                    System.out.println("New transaction ID is: " + transactionID);
+                } catch (Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+
+            case 24: // Commit a transaction
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Committing transaction with id:" + arguments.elementAt(1));
+                try {
+                    id = getInt(arguments.elementAt(1));
+
+                    boolean outcome = proxy.commit(id);
+                    if (outcome) {
+                        System.out.println("Successfully committed transaction with id: " + arguments.elementAt(1));
+                    } else {
+                        System.out.println("Transaction with id " + arguments.elementAt(1)
+                                + " deadlocked while committing (transaction also aborted)");
+                    }
+                } catch (Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+
+            case 25:
+                if (arguments.size() != 2) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Aborting transaction with id " + arguments.elementAt(1));
+                try {
+                    id = getInt(arguments.elementAt(1));
+
+                    boolean outcome = proxy.abort(id);
+                    System.out.println("Successfully aborted transaction with id: " + arguments.elementAt(1));
+
+                } catch (Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+                break;
+
+            case 26:
+                if (arguments.size() != 1) {
+                    wrongNumber();
+                    break;
+                }
+                System.out.println("Shutting down the servers");
+                try {
+                    boolean outcome = proxy.shutdown();
+
+                    if (outcome) {
+                        System.out.println("Server successfully shut down");
+                    } else {
+                        System.out.println("Transacations are still running. System shutdown was aborted");
+                    }
+
+                } catch (Exception e) {
+                    System.out.println("EXCEPTION: ");
+                    System.out.println(e.getMessage());
+                    e.printStackTrace();
+                }
+
             default:
                 System.out.println("The interface does not support this command.");
                 break;
@@ -623,6 +701,14 @@ public class Client extends WSClient {
             return 21;
         else if (argument.compareToIgnoreCase("newcustomerid") == 0)
             return 22;
+        else if (argument.compareToIgnoreCase("start") == 0)
+            return 23;
+        else if (argument.compareToIgnoreCase("commit") == 0)
+            return 24;
+        else if (argument.compareToIgnoreCase("abort") == 0)
+            return 25;
+        else if (argument.compareToIgnoreCase("shutdown") == 0)
+            return 26;
         else
             return 666;
     }
