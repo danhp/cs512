@@ -242,6 +242,16 @@
         </javac>
     </target>
 
+    <target name="build-lockmanager">
+        <javac
+                fork="true"
+                srcdir="${basedir}/src"
+                destdir="${basedir}/build"
+                includes="LockManager/**">
+            <classpath refid="jaxws.classpath"/>
+        </javac>
+    </target>
+
     <target name="help">
         <echo message="server:  Builds and deploys the service"/>
         <echo message="client:  Builds and runs the client"/>

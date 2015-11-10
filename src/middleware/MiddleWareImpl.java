@@ -1,7 +1,7 @@
 package middleware;
 
 import LockManager.LockManager;
-import middleware.ws.MiddleWare;
+import LockManager.DeadlockException;
 import server.*;
 
 import javax.jws.WebService;
@@ -24,13 +24,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int ADD_NEW = 2;
 
     private TransactionManager transactionManager;
+    private LockManager lockManager;
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
         String hosts[] = {"localhost","localhost","localhost" };
         int[] ports = {4000,4001,4002};
 
-        setupProxies(hosts, ports);
+        setup(hosts, ports);
     }
 
     public MiddleWareImpl(String[] hosts, int[] ports) {
@@ -39,11 +40,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return;
         }
 
-        setupProxies(hosts, ports);
-        transactionManager = new TransactionManager(this, getCarProxy(), getFlightProxy(), getRoomProxy());
+        setup(hosts, ports);
     }
 
-    public void setupProxies(String[] hosts, int[] ports)
+    public void setup(String[] hosts, int[] ports)
     {
         proxy = new middleware.ResourceManager[ports.length];
 
@@ -58,6 +58,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         } catch (MalformedURLException e) {
             System.out.println(e);
         }
+
+        // Setup TM and LM
+        transactionManager = new TransactionManager(this, getCarProxy(), getFlightProxy(), getRoomProxy());
+        lockManager = new LockManager();
     }
 
 
@@ -105,18 +109,18 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
     @Override
-    public void start(int id) {
-        transactionManager.start(id);
+    public int start() {
+        return transactionManager.start();
     }
 
     @Override
-    public void commit(int id) {
-        transactionManager.commit(id);
+    public boolean commit(int id) {
+        return transactionManager.commit(id);
     }
 
     @Override
-    public void abort(int id) {
-        transactionManager.abort(id);
+    public boolean abort(int id) {
+        return transactionManager.abort(id);
     }
 
     // Undo `operation`
@@ -131,8 +135,18 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-        transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-        return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
+        try {
+            lockManager.pretty_print();
+            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
+                Trace.info("Just got the lock");
+                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+                return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
+            }
+        } catch (DeadlockException e) {
+            Trace.warn("Deadlock");
+            transactionManager.abort(id);
+        }
+        return false;
     }
 
     @Override

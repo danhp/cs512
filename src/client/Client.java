@@ -46,7 +46,6 @@ public class Client extends WSClient {
         int numRooms;
         int numCars;
         String location;
-        boolean isActive = false;
 
         String command = "";
         Vector arguments = new Vector();
@@ -575,10 +574,6 @@ public class Client extends WSClient {
                 break;
 
                 case 23: //commit
-                    if (!isActive) {
-                        System.out.println("Client is inactive, must activate using 'start' command to commit");
-                        break;
-                    }
                     if (arguments.size() != 2) {
                         wrongNumber();
                         break;
@@ -595,26 +590,21 @@ public class Client extends WSClient {
                     break;
                 case 24: //start
 
-                    if (arguments.size() != 2) {
+                    if (arguments.size() != 1) {
                         wrongNumber();
                         break;
                     }
+                    System.out.println("Starting a new transaction");
                     try {
-                        id = getInt(arguments.elementAt(1));
-                        System.out.println("Starting transaction with ID: " + id);
-                        int customer = getInt(arguments.elementAt(2));
-                        boolean c = proxy.start(id);
-                    } catch (Exception ex) {
+                        int transactionID = proxy.start();
+                        System.out.println("New transaction ID is: " + transactionID);
+                    } catch (Exception e) {
                         System.out.println("EXCEPTION: ");
-                        System.out.println(ex.getMessage());
-                        ex.printStackTrace();
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
                     }
                     break;
                 case 25: //abort
-                    if (!isActive) {
-                        System.out.println("Nothing to abort");
-                        break;
-                    }
                     if (arguments.size() != 2) {
                         wrongNumber();
                         break;

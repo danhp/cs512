@@ -1,6 +1,7 @@
 package middleware;
 
 import LockManager.LockManager;
+import server.Trace;
 
 import java.util.ArrayList;
 import java.util.HashMap;
@@ -38,23 +39,33 @@ public class TransactionManager {
         transactions = new ArrayList<Transaction>();
     }
 
-    public void start(int id) {
+    public int start() {
+        //Create id
+        int id = transactions.size();
         this.transactions.add(new Transaction(id));
         this.activeTransactions.put(id, new ArrayList<Integer>());
+        return id;
     }
 
-    public void commit(int id) {
+    public boolean commit(int id) {
         //Unlock all
-        this.lm.UnlockAll(id);
-        //remove and place into active transactions
-        this.transactions.remove(id);
+        if (this.lm.UnlockAll(id)) {
 
-        for (Integer rm : activeTransactions.get(id)) {
-            commitToRM(id, rm);
+            //commit to rms
+            for (Integer rm : activeTransactions.get(id)) {
+                commitToRM(id, rm);
+            }
+
+            //remove from active
+            this.activeTransactions.remove(id);
+            return true;
+        } else {
+            Trace.error("Couldn't unlock all for transaction " + id);
+            return false;
         }
     }
 
-    public void abort(int id) {
+    public boolean abort(int id) {
         //Unlock all
         this.lm.UnlockAll(id);
 
@@ -63,11 +74,16 @@ public class TransactionManager {
         for (Operation op : transaction.history()) {
             middleware.undo(transaction.getId(), op);
         }
-        this.transactions.remove(id);
 
+        //abort to RMs
         for (Integer rm : activeTransactions.get(id)) {
             abortToRM(id, rm);
         }
+
+        //remove from active
+        this.activeTransactions.remove(id);
+
+        return true;
     }
 
     private void commitToRM(int id, int rmIndex) {
@@ -90,13 +106,23 @@ public class TransactionManager {
         }
     }
 
+    private void startToRM(int id, int rmIndex) {
+        if (rmIndex == CAR_PROXY_INDEX) {
+            carProxy.start(id);
+        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
+            flightProxy.start(id);
+        } else {
+            roomProxy.start(id);
+        }
+    }
+
     public void enlist(int id, int rmIndex) {
         //add operation to transaction with Id
         List<Integer> proxies = activeTransactions.get(id);
         if (!proxies.contains(rmIndex)) {
             proxies.add(rmIndex);
+            startToRM(id, rmIndex);
         }
-
     }
 
     public Transaction getTransaction(int id) {

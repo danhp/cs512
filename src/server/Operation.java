@@ -26,4 +26,9 @@ public class Operation {
 
     public String getKey() { return this.key; }
     public RMItem getItem() { return this.item; }
+
+    @Override
+    public String toString() {
+        return "Operation("+key+","+type+")";
+    }
 }

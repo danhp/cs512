@@ -5,10 +5,9 @@
 
 package server;
 
-import sun.rmi.transport.tcp.TCPTransport;
-
 import javax.jws.WebService;
 import java.util.HashMap;
+import java.util.List;
 import java.util.Map;
 
 
@@ -38,7 +37,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 type = 2; // operation is add
             Transaction t = this.transactions.get(id);
             if (t!=null)
-              t.addOperation(new Operation(key, oldValue, type));
+                t.addOperation(new Operation(key, oldValue, type));
+
+            System.out.println("Saved transaction " + t);
 
             m_itemHT.put(key, newValue);
         }
@@ -60,20 +61,25 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int id) {
+        System.out.println("Starting transaction " + id);
         this.transactions.put(id, new Transaction(id));
     }
 
     @Override
     public void commit(int id) {
+        Trace.info("Committing transaction " + id);
         //nothing to do but to remove the transactions
         this.transactions.remove(id);
     }
 
     @Override
     public void abort(int id) {
+        Trace.info("Aborting transaction " + id);
         //undo the operations
         Transaction transaction = this.transactions.get(id);
-        for (Operation op : transaction.history()) {
+        List<Operation> history = transaction.history();
+        for (int i = transaction.history().size()-1; i>0; i++) {
+            Operation op = history.get(i);
             this.undo(transaction.getId(), op);
         }
         this.transactions.remove(id);
@@ -81,6 +87,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     // Undo `operation`
     public void undo(int id, Operation operation) {
+        System.out.println("Undoing xid " + id + " operation " + operation);
+
         // note id=-1 so that the operation won't be saved
         if (operation.isAdd())
             removeData(-1, operation.getKey(), null);

@@ -28,4 +28,9 @@ public class Transaction {
     public boolean equals(Transaction transaction) {
         return this.id == transaction.id;
     }
+
+    @Override
+    public String toString() {
+        return "Transaction " + id + ". History: " + history;
+    }
 }

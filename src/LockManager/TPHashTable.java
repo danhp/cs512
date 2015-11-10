@@ -23,7 +23,12 @@ public class TPHashTable
             this.vect.addElement( new Vector(this.HASH_DEPTH) );
         }
     }
-    
+
+    @Override
+    public String toString() {
+        return vect.toString();
+    }
+
     public int getSize()
     {
         return iSize;

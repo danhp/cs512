@@ -8,13 +8,13 @@ import java.util.Vector;
 public interface MiddleWare {
     // Transaction operations //
     @WebMethod
-    public void start(int id);
+    public int start();
 
     @WebMethod
-    public void commit(int id);
+    public boolean commit(int id);
 
     @WebMethod
-    public void abort(int id);
+    public boolean abort(int id);
 
     // Flight operations //
 

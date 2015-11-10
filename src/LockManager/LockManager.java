@@ -21,6 +21,7 @@ public class LockManager
     }
     
     public boolean Lock(int xid, String strData, int lockType) throws DeadlockException {
+        System.out.println("Acquiring lock for " + xid  + " on " + strData + " " + lockType);
     
         // if any parameter is invalid, then return false
         if (xid < 0) { 
@@ -48,6 +49,7 @@ public class LockManager
                     // check if this lock request conflicts with existing locks
                     bConflict = LockConflict(dataObj, bConvert);
                     if (!bConflict) {
+                        System.out.println("No conflict detected.");
                         // no lock conflict
                         synchronized (this.stampTable) {
                             // remove the timestamp (if any) for this lock request
@@ -82,6 +84,7 @@ public class LockManager
                     }
                 }
                 if (bConflict) {
+                    System.out.println("Conflict detected.");
                     // lock conflict exists, wait
                     WaitLock(dataObj);
                 }
@@ -100,7 +103,8 @@ public class LockManager
 
     
     // remove all locks for this transaction in the lock table.
-    public boolean  UnlockAll(int xid) {
+    public boolean UnlockAll(int xid) {
+        System.out.println("Releasing all locks for " + xid);
 
         // if any parameter is invalid, then return false
         if (xid < 0) {
@@ -189,8 +193,10 @@ public class LockManager
     // lock), then this is ignored. This is done by throwing RedundantLockRequestException which is handled 
     // appropriately by the caller.
     // ---> If the lock request is a conversion from READ lock to WRITE lock, then bitset is set.
-    
+
     private boolean LockConflict(DataObj dataObj, BitSet bitset) throws DeadlockException, RedundantLockRequestException {
+        System.out.println("Checking for conflicts");
+
         Vector vect = this.lockTable.elements(dataObj);
         DataObj dataObj2;
         int size = vect.size();
