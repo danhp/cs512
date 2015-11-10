@@ -23,7 +23,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int DELETE = 1;
     private static int ADD_NEW = 2;
 
-    private TransactionManagerImpl transactionManager;
+    private TransactionManager transactionManager;
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
@@ -40,7 +40,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         setupProxies(hosts, ports);
-        transactionManager = new TransactionManagerImpl(this, getCarProxy(), getFlightProxy(), getRoomProxy());
+        transactionManager = new TransactionManager(this, getCarProxy(), getFlightProxy(), getRoomProxy());
     }
 
     public void setupProxies(String[] hosts, int[] ports)
@@ -72,7 +72,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // Read a data item.
     private RMItem readData(int id, String key) {
         synchronized(m_itemHT) {
-            return (server.RMItem) m_itemHT.get(key);
+            return (RMItem) m_itemHT.get(key);
         }
     }
 
@@ -94,13 +94,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // Remove the item out of storage.
     // Invalid transaction id --> operation not saved.
-    protected server.RMItem removeData(int id, String key, server.RMItem oldValue) {
+    protected RMItem removeData(int id, String key, RMItem oldValue) {
         synchronized(m_itemHT) {
             Transaction t = this.transactionManager.getTransaction(id);
             if (t != null)
                 this.transactionManager.getTransaction(id).addOperation(new Operation(key, oldValue, DELETE));
 
-            return (server.RMItem) m_itemHT.remove(key);
+            return (RMItem) m_itemHT.remove(key);
         }
     }
 
@@ -386,92 +386,4 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
 }
 
-public class TransactionManagerImpl {
 
-    private Map<Integer, List<Integer>> activeTransactions = new HashMap<Integer, List<Integer>>();
-    private List<Transaction> transactions;
-
-    private MiddleWareImpl middleware;
-    private middleware.ResourceManager carProxy;
-    private middleware.ResourceManager flightProxy;
-    private middleware.ResourceManager roomProxy;
-
-    private static int CAR_PROXY_INDEX = 0;
-    private static int FLIGHT_PROXY_INDEX = 1;
-    private static int ROOM_PROXY_INDEX = 2;
-
-    private LockManager lm = new LockManager();
-
-    public TransactionManagerImpl(MiddleWareImpl middleware,
-                                  middleware.ResourceManager carProxy,
-                                  middleware.ResourceManager flightProxy,
-                                  middleware.ResourceManager roomProxy ) {
-        this.middleware = middleware;
-        this.carProxy = carProxy;
-        this.flightProxy = flightProxy;
-        this.roomProxy = roomProxy;
-
-        transactions = new ArrayList<Transaction>();
-    }
-
-    public void start(int id) {
-        this.transactions.add(new Transaction(id));
-        this.activeTransactions.put(id, new ArrayList<Integer>());
-    }
-
-    public void commit(int id) {
-        //Unlock all
-        this.lm.UnlockAll(id);
-        //remove and place into active transactions
-        this.transactions.remove(id);
-
-        for (Integer rm : activeTransactions.get(id)) {
-            commitToRM(id, rm);
-        }
-    }
-
-    public void abort(int id) {
-        //Unlock all
-        this.lm.UnlockAll(id);
-
-        //undo the operations on customer
-        Transaction transaction = this.transactions.get(id);
-        for (Operation op : transaction.history()) {
-            middleware.undo(transaction.getId(), op);
-        }
-        this.transactions.remove(id);
-
-        for (Integer rm : activeTransactions.get(id)) {
-            abortToRM(id, rm);
-        }
-    }
-
-    private void commitToRM(int id, int rmIndex) {
-        if (rmIndex == CAR_PROXY_INDEX) {
-            carProxy.commit(id);
-        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
-            flightProxy.commit(id);
-        } else {
-            roomProxy.commit(id);
-        }
-    }
-
-    private void abortToRM(int id, int rmIndex) {
-        if (rmIndex == CAR_PROXY_INDEX) {
-            carProxy.abort(id);
-        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
-            flightProxy.abort(id);
-        } else {
-            roomProxy.abort(id);
-        }
-    }
-
-    public void enlist(int id, int rmIndex) {
-        //add operation to transaction with Id
-        List<Integer> proxies = activeTransactions.get(id);
-        if (!proxies.contains(rmIndex)) {
-            proxies.add(rmIndex);
-        }
-
-    }
-}
