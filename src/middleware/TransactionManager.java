@@ -135,4 +135,10 @@ public class TransactionManager {
 
         return null;
     }
+
+    public boolean transactionExists(int id) {
+        if (activeTransactions.containsKey(id)) {
+            return true;
+        } else return false;
+    }
 }
