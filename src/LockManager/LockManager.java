@@ -51,7 +51,8 @@ public class LockManager
                             WaitObj waitObj = new WaitObj(xid, strData, lockType);
                             this.waitTable.remove(waitObj);
                         }
-                         
+
+                        // TODO:
                         if (bConvert.get(0) == true) {
                             // lock conversion
 
@@ -63,6 +64,9 @@ public class LockManager
                             this.lockTable.remove(dataObj);
 
                             // add WRITE locks
+                            trxnObj.setLockType(TrxnObj.WRITE);
+                            dataObj.setLockType(TrxnObj.WRITE);
+
                             this.lockTable.add(trxnObj);
                             this.lockTable.add(dataObj);
                         } else {
@@ -202,6 +206,7 @@ public class LockManager
                     // (2) transaction already had a WRITE lock
                     // Seeing the comments at the top of this function might be helpful
 
+                    // TODO:
                     //(1)
                     if (dataObj2.getLockType() == DataObj.READ) {
                         bitset.set(0, true);    // READ->WRITE  bitset is set

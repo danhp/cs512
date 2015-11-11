@@ -27,4 +27,5 @@ public class Operation {
 
     public String getKey() { return this.key; }
     public int getItem() { return this.itemType; }
+    public int getType() { return this.type; }
 }

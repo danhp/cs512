@@ -157,63 +157,85 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
-        this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2));
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2))) return false;
+
         return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
-        this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2));
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2))) return false;
+
         return getFlightProxy().deleteFlight(id, flightNumber);
     }
 
     @Override
     public int queryFlight(int id, int flightNumber) {
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 1))) return 0;
+
         return getFlightProxy().queryFlight(id, flightNumber);
     }
 
     @Override
     public int queryFlightPrice(int id, int flightNumber) {
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 1))) return 0;
+
         return getFlightProxy().queryFlightPrice(id, flightNumber);
     }
 
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
+        if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
+
         return getCarProxy().addCars(id, location, numCars, carPrice);
     }
 
     @Override
     public boolean deleteCars(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
+
         return getCarProxy().deleteCars(id, location);
     }
 
     @Override
     public int queryCars(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 1, 1))) return 0;
+
         return getCarProxy().queryCars(id, location);
     }
 
     @Override
     public int queryCarsPrice(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 1, 1))) return 0;
+
         return getCarProxy().queryCarsPrice(id, location);
     }
 
     @Override
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
+
         return getRoomProxy().addRooms(id, location, numRooms, roomPrice);
     }
 
     @Override
     public boolean deleteRooms(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
+
         return getRoomProxy().deleteRooms(id, location);
     }
 
     @Override
     public int queryRooms(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 2, 1))) return 0;
+
         return getRoomProxy().queryRooms(id, location);
     }
 
     @Override
     public int queryRoomsPrice(int id, String location) {
+        if (!this.tm.addOperation(id, new Operation(location, 2, 1))) return 0;
+
         return getRoomProxy().queryRoomsPrice(id, location);
     }
 
@@ -229,6 +251,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         Customer cust = new Customer(customerId);
         writeData(id, cust.getKey(), cust, false);
         Trace.info("RM::newCustomer(" + id + ") OK: " + customerId);
+
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return 0;
+
         return customerId;
     }
 
@@ -236,6 +261,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public boolean newCustomerId(int id, int customerId) {
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
+
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             cust = new Customer(customerId);
@@ -253,6 +281,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public boolean deleteCustomer(int id, int customerId) {
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
+
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.warn("RM::deleteCustomer(" + id + ", "
@@ -283,6 +314,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public Object[] getCustomerReservations(int id, int customerId) {
         Trace.info("RM::getCustomerReservations(" + id + ", "
                 + customerId + ") called.");
+
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 1))) return null;
+
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.info("RM::getCustomerReservations(" + id + ", "
@@ -305,6 +339,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public String queryCustomerInfo(int id, int customerId) {
         Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
+
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 1))) return null;
+
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             Trace.warn("RM::queryCustomerInfo(" + id + ", "
@@ -326,7 +363,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
             return false;
         }
-
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
         boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
 
         if (!reserved) {
@@ -349,6 +386,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
         boolean reserved = getCarProxy().reserveCar(id, customerId, location);
 
         if (!reserved) {
@@ -371,6 +409,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
         boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
 
         if (!reserved) {
@@ -387,6 +426,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
+        if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 

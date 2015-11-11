@@ -607,7 +607,11 @@ public class Client extends WSClient {
                     id = getInt(arguments.elementAt(1));
 
                     boolean outcome = proxy.abort(id);
-                    System.out.println("Successfully aborted transaction with id: " + arguments.elementAt(1));
+                    if (outcome) {
+                        System.out.println("Successfully aborted transaction with id: " + arguments.elementAt(1));
+                    } else {
+                        System.out.println("Failed to abort transaction with id: " + arguments.elementAt(1));
+                    }
 
                 } catch (Exception e) {
                     System.out.println("EXCEPTION: ");
