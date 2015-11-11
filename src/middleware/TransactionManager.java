@@ -5,20 +5,21 @@ import LockManager.DeadlockException;
 
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 public class TransactionManager {
 
     // 1 min timeout
-    private static long TRANSACTION_TIMEOUT = 60000;
+    private static long TRANSACTION_TIMEOUT = 30000;
 
     private MiddleWareImpl mw;
 
     private LockManager lockManager = new LockManager();
 
     private int transactions = 0;
-    private Map<Integer, Transaction> activeTransactions = new HashMap<Integer, Transaction>();
+    private Map<Integer, Transaction> activeTransactions = new ConcurrentHashMap<>();
 
-    private Map<Integer, ExpireTime> expireTimeMap = new HashMap<>();
+    private Map<Integer, ExpireTime> expireTimeMap = new ConcurrentHashMap<>();
     class ExpireTime {
         private long expireTime;
 
@@ -149,7 +150,7 @@ public class TransactionManager {
     }
 
     public void resetTimer(int transactionID) {
-        synchronized (expireTimeMap) {
+        synchronized (this.expireTimeMap) {
             long newExpireTime = System.currentTimeMillis() + TRANSACTION_TIMEOUT;
             this.expireTimeMap.get(transactionID).setExpireTime(newExpireTime);
         }
