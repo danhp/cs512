@@ -1,5 +1,8 @@
 package LockManager;
 
+import middleware.Transaction;
+import server.Trace;
+
 import javax.xml.crypto.Data;
 import java.util.BitSet;
 import java.util.Vector;
@@ -49,7 +52,7 @@ public class LockManager
                     // check if this lock request conflicts with existing locks
                     bConflict = LockConflict(dataObj, bConvert);
                     if (!bConflict) {
-                        System.out.println("No conflict detected.");
+                        Trace.info("No conflict detected.");
                         // no lock conflict
                         synchronized (this.stampTable) {
                             // remove the timestamp (if any) for this lock request
@@ -62,22 +65,16 @@ public class LockManager
                             WaitObj waitObj = new WaitObj(xid, strData, lockType);
                             this.waitTable.remove(waitObj);
                         }
-                         
+
                         if (bConvert.get(0) == true) {
                             // lock conversion
-
-                            System.out.println("Lock Conversion : on " + dataObj.getDataName()
-                                    + " for transaction " + dataObj.getXId());
-                            // remove hold READ locks
-
-
-                            trxnObj = (TrxnObj) lockTable.get(new TrxnObj(xid, strData, TrxnObj.READ));
+                            trxnObj = (TrxnObj) this.lockTable.get(
+                                    new TrxnObj(xid, strData, TrxnObj.READ));
+                            dataObj = (DataObj) this.lockTable.get(
+                                    new DataObj(xid, strData, TrxnObj.READ));
                             trxnObj.setLockType(TrxnObj.WRITE);
-
-                            dataObj = (DataObj) lockTable.get(new DataObj(xid, strData, TrxnObj.READ));
                             dataObj.setLockType(TrxnObj.WRITE);
-
-                            // add WRITE locks
+                            System.out.println("Converted from READ to WRITE");
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);
@@ -86,17 +83,19 @@ public class LockManager
                     }
                 }
                 if (bConflict) {
-                    System.out.println("Conflict detected.");
+                    Trace.info("Conflict detected.");
                     // lock conflict exists, wait
                     WaitLock(dataObj);
                 }
             }
         } 
         catch (DeadlockException deadlock) {
+            Trace.warn(deadlock.getMessage());
             throw deadlock;
         }
         catch (RedundantLockRequestException redundantlockrequest) {
               // just ignore the redundant lock request
+            Trace.warn(redundantlockrequest.getMessage());
             return true;
         } 
 
@@ -202,11 +201,12 @@ public class LockManager
         Vector vect = this.lockTable.elements(dataObj);
         DataObj dataObj2;
         int size = vect.size();
-        
+
         // as soon as a lock that conflicts with the current lock request is found, return true
         for (int i = 0; i < size; i++) {
             dataObj2 = (DataObj) vect.elementAt(i);
-            if (dataObj.getXId() == dataObj2.getXId()) {    
+
+            if (dataObj.getXId() == dataObj2.getXId()) {
                 // the transaction already has a lock on this data item which means that it is either
                 // relocking it or is converting the lock
                 if (dataObj.getLockType() == DataObj.READ) {    
@@ -222,40 +222,30 @@ public class LockManager
                     // Seeing the comments at the top of this function might be helpful
 
                     //(1)
-                    if (dataObj2.getLockType() == DataObj.READ) {
-                        //we must check the other transactions to see if they have a lock
-                        //Then we can return true if there is a lock conflict, and conversion
-                        // of the lock cannot happen
-
-                        for (Object obj : vect) {
-                            if (((DataObj)obj).getXId() != dataObj.getXId()) {
-                                System.out.println("Object " + dataObj.getDataName() + "with Transaction "
-                                + dataObj.getXId() + " has requested WRITE lock, and currently has read lock " +
-                                "This cannot be granted as another transaction has a WRITE lock");
-                                return true;
-                            }
-                        }
-                        //set to true to show that we need a lock conversion
-                        bitset.set(0, true);  // READ->WRITE  bitset is set
-                    } else if (dataObj2.getLockType() == DataObj.WRITE) {
+                    if (dataObj2.getLockType() == DataObj.WRITE) {
+                        // since transaction already has a Write lock on this data item and it is requesting
+                        //a Write lock, this lock request is redundant.
                         throw new RedundantLockRequestException(dataObj.getXId(), "Redundant WRITE lock request");
+                    }
+                    else if (dataObj2.getLockType() == DataObj.READ) {
+                        bitset.set(0, true);
+                        Trace.info("Want WRITE, already have READ; CONVERT");
                     }
                 }
             } 
             else {
                 if (dataObj.getLockType() == DataObj.READ) {
                     if (dataObj2.getLockType() == DataObj.WRITE) {
-
-                        System.out.println("Want READ, someone has WRITE");
+                        Trace.info("Want READ, someone has WRITE");
                         return true;
                     }
                     else {
-                        // do nothing 
+                        // do nothing
                     }
                 } else if (dataObj.getLockType() == DataObj.WRITE) {
                     // transaction is requesting a WRITE lock and some other transaction has either
                     // a READ or a WRITE lock on it ==> conflict
-                    System.out.println("Want WRITE, someone has READ or WRITE");
+                    Trace.info("Want WRITE, someone has READ or WRITE");
                     return true;
                 }
             }

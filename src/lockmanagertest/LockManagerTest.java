@@ -1,3 +1,5 @@
+package LockManagerTest;
+
 import LockManager.*;
 
 class LockManagerTest {

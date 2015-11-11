@@ -246,7 +246,7 @@
         <javac
                 fork="true"
                 srcdir="${basedir}/src"
-                destdir="${basedir}/build"
+                destdir="${basedir}/build/classes"
                 includes="LockManager/**">
             <classpath refid="jaxws.classpath"/>
         </javac>

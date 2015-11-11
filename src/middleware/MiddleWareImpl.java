@@ -138,7 +138,6 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
         try {
-            lockManager.pretty_print();
             if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
                 transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
                 return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
