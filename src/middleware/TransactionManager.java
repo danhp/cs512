@@ -78,7 +78,7 @@ public class TransactionManager {
         }
 
         //remove from active
-        this.ns.remove(id);
+        this.activeTransactions.remove(id);
 
         return true;
     }
