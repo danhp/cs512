@@ -1,6 +1,5 @@
 package middleware;
 
-import LockManager.LockManager;
 import server.Trace;
 
 import java.util.ArrayList;
@@ -24,8 +23,6 @@ public class TransactionManager {
     private static int CAR_PROXY_INDEX = 0;
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
-
-    private LockManager lm = new LockManager();
 
     public TransactionManager(MiddleWareImpl middleware,
                                   middleware.ResourceManager carProxy,
@@ -53,21 +50,14 @@ public class TransactionManager {
             return false;
         }
 
-        //Unlock all
-        if (this.lm.UnlockAll(id)) {
-
-            //commit to rms
-            for (Integer rm : activeTransactions.get(id)) {
-                commitToRM(id, rm);
-            }
-
-            //remove from active
-            this.activeTransactions.remove(id);
-            return true;
-        } else {
-            Trace.error("Couldn't unlock all for transaction " + id);
-            return false;
+        //commit to rms
+        for (Integer rm : activeTransactions.get(id)) {
+            commitToRM(id, rm);
         }
+
+        //remove from active
+        this.activeTransactions.remove(id);
+        return true;
     }
 
     public boolean abort(int id) {
@@ -75,8 +65,6 @@ public class TransactionManager {
             Trace.error("Abort: Transaction with ID: " + id + " does not exist");
             return false;
         }
-        //Unlock all
-        this.lm.UnlockAll(id);
 
         //undo the operations on customer
         Transaction transaction = this.transactions.get(id);
@@ -90,7 +78,7 @@ public class TransactionManager {
         }
 
         //remove from active
-        this.activeTransactions.remove(id);
+        this.ns.remove(id);
 
         return true;
     }
