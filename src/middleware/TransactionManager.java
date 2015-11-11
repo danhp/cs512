@@ -5,7 +5,6 @@ import LockManager.DeadlockException;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.locks.Lock;
 
 public class TransactionManager {
 
@@ -14,7 +13,7 @@ public class TransactionManager {
 
     private MiddleWareImpl mw;
 
-    private LockManager customerLock = new LockManager();
+    private LockManager lockManager = new LockManager();
 
     private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
     private Map<Integer, Transaction> activeTransactions = new HashMap<Integer, Transaction>();
@@ -42,28 +41,26 @@ public class TransactionManager {
     public boolean commit(int id) {
         Transaction toCommit = activeTransactions.get(id);
 
-        try {
+//        try {
+//            // Get all the locks
+//            for (Operation op: toCommit.history()) {
+//
+//            }
+//        } catch (DeadlockException e) {
+//            System.out .println("Deadlocked while committing transaction: " + id);
+//            this.abort(id);
+//            return false;
+//        }
 
-            // Get all the locks
-            for (Operation op: toCommit.history()) {
+        // Execute all the operations
+        mw.getCarProxy().commit(id);
+        mw.getFlightProxy().commit(id);
+        mw.getRoomProxy().commit(id);
+        mw.commitCustomer(id);
 
-            }
 
-            customerLock.Lock(id, "", 1);
-
-            // Execute all the operations
-
-            // Unlock everything
-            this.customerLock.UnlockAll(id);
-//            this.carLock.UnlockAll(id);
-//            this.flightLock.UnlockAll(id);
-//            this.roomLock.UnlockAll(id);
-
-        } catch (DeadlockException e) {
-            System.out .println("Deadlocked while committing.");
-            this.abort(id);
-            return false;
-        }
+        // Unlock everything
+        this.lockManager.UnlockAll(id);
 
         this.activeTransactions.remove(id);
         return true;
@@ -79,12 +76,16 @@ public class TransactionManager {
         return true;
     }
 
-    // Properly lock
-    public void addOperation(int id, Operation op) {
+    // Essential for tracking which locks to request.
+    public void addOperation(int transactionID, Operation op) {
+        Transaction t = this.activeTransactions.get(transactionID);
+        if (t != null) {
+           t.addOperation(op);
+        }
 
     }
 
     public boolean isActive() {
-        return activeTransactions.isEmpty();
+        return !activeTransactions.isEmpty();
     }
 }

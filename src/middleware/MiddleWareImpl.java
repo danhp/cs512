@@ -1,6 +1,7 @@
 package middleware;
 
 import LockManager.LockManager;
+import LockManager.DeadlockException;
 import server.*;
 
 import javax.jws.WebService;
@@ -62,19 +63,25 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // CUSTOMER
 
     protected RMHashtable customerHT = new RMHashtable();
+
+    private Map<Integer, Map<String, RMItem>> readSet = new HashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
-    private LockManager lm = new LockManager();
 
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
         synchronized(customerHT) {
-            Map<String, RMItem> set = writeSet.get(transactionID);
+            // Check the writeSet
+            if (writeSet.get(transactionID).containsKey(key))
+                return writeSet.get(transactionID).get(key);
 
-            if (set.containsKey(key)) {
-                return set.get(key);
-            } else {
-                return (RMItem) customerHT.get(key);
-            }
+            // Check the readSet
+            if (readSet.get(transactionID).containsKey(key))
+                return readSet.get(transactionID).get(key);
+
+            // Else get data from database
+            RMItem item = (RMItem) customerHT.get(key);
+            this.readSet.get(transactionID).put(key, item);
+            return item;
         }
     }
 
@@ -84,7 +91,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             if (commit) {
                 customerHT.put(key, newValue);
             } else {
-                writeSet.get(transactionID).put(key, newValue);
+                // save the data in the write set.
+                this.writeSet.get(transactionID).put(key, newValue);
             }
         }
     }
@@ -95,9 +103,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             if (commit) {
                 customerHT.remove(key);
             } else {
-                // set to null to remove
-                // TODO: don't use null?
-                writeSet.get(transactionID).put(key, null);
+                // remove from the write set.
+                // tag it with null to mark for deletion
+                this.writeSet.get(transactionID).put(key, null);
             }
         }
     }
@@ -107,30 +115,28 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         if (writeSet.containsKey(transactionID)) return;
 
         writeSet.put(transactionID, new HashMap<String, RMItem>());
+        readSet.put(transactionID, new HashMap<String, RMItem>());
     }
 
     public void commitCustomer(int transactionID) {
         if (!writeSet.containsKey(transactionID)) return;
 
         for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
-            this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+            if (entry.getValue() == null) {
+                this.removeData(transactionID, entry.getKey(), true);
+            } else {
+                this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+            }
         }
+
+        this.writeSet.remove(transactionID);
+        this.readSet.remove(transactionID);
     }
 
     public void abortCustomer(int transactionID) {
         if (!writeSet.containsKey(transactionID)) return;
         this.writeSet.remove(transactionID);
-    }
-
-    // CUSTOMER LOCK HELPERS
-    public boolean requestLock(int transactionID) {
-
-        return true;
-    }
-
-    public boolean unlockAll(int transactionID) {
-        this.lm.UnlockAll(transactionID);
-        return true;
+        this.readSet.remove(transactionID);
     }
 
     // TRANSACTIONS
@@ -151,11 +157,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
+        this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2));
         return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
+        this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2));
         return getFlightProxy().deleteFlight(id, flightNumber);
     }
 
@@ -403,8 +411,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         if (tm.isActive()) return false;
 
         // Shutdown all the RMs
-        this.getCarProxy().shutdown();
         this.getFlightProxy().shutdown();
+        this.getCarProxy().shutdown();
         this.getRoomProxy().shutdown();
 
         // Shutdown the middleware

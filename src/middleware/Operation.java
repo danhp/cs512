@@ -7,16 +7,16 @@ import server.RMItem;
  */
 public class Operation {
     private String key;
-    private RMItem item;
+    private int itemType;
     private int type;       //0-overwrite, 1-delete, 2-write 3-read
 
-    public Operation(String key, RMItem item) {
+    public Operation(String key, int item) {
         this.key = key;
-        this.item = item;
+        this.itemType = item;
         this.type = 0;
     }
 
-    public Operation(String key, RMItem item, int type) {
+    public Operation(String key, int item, int type) {
         this(key, item);
         this.type = type;
     }
@@ -24,8 +24,7 @@ public class Operation {
     public boolean isOvewrite() { return this.type == 0; }
     public boolean isDelete() { return this.type == 1; }
     public boolean isAdd() { return this.type == 2; }
-    public boolean isRead() { return this.type == 3; }
 
     public String getKey() { return this.key; }
-    public RMItem getItem() { return this.item; }
+    public int getItem() { return this.itemType; }
 }

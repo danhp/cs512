@@ -636,6 +636,7 @@ public class Client extends WSClient {
                     System.out.println(e.getMessage());
                     e.printStackTrace();
                 }
+                break;
 
             default:
                 System.out.println("The interface does not support this command.");

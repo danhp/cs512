@@ -1,6 +1,5 @@
 package LockManager;
 
-import javax.xml.crypto.Data;
 import java.util.BitSet;
 import java.util.Vector;
 
@@ -23,17 +22,9 @@ public class LockManager
     public boolean Lock(int xid, String strData, int lockType) throws DeadlockException {
     
         // if any parameter is invalid, then return false
-        if (xid < 0) { 
-            return false;
-        }
-        
-        if (strData == null) {
-            return false;
-        }
-        
-        if ((lockType != TrxnObj.READ) && (lockType != TrxnObj.WRITE)) { 
-            return false;
-        }
+        if (xid < 0) return false;
+        if (strData == null) return false;
+        if ((lockType != TrxnObj.READ) && (lockType != TrxnObj.WRITE)) return false;
         
         // two objects in lock table for easy lookup.
         TrxnObj trxnObj = new TrxnObj(xid, strData, lockType);
@@ -103,9 +94,7 @@ public class LockManager
     public boolean  UnlockAll(int xid) {
 
         // if any parameter is invalid, then return false
-        if (xid < 0) {
-            return false;
-        }
+        if (xid < 0) return false;
 
         TrxnObj trxnQueryObj = new TrxnObj(xid, "", -1);  // Only used in elements() call below.
         synchronized (this.lockTable) {
@@ -313,9 +302,7 @@ public class LockManager
     
 
     // cleanupDeadlock cleans up stampTable and waitTable, and throws DeadlockException
-    private void cleanupDeadlock(TimeObj tmObj, WaitObj waitObj)
-        throws DeadlockException
-    {
+    private void cleanupDeadlock(TimeObj tmObj, WaitObj waitObj) throws DeadlockException {
         synchronized (this.stampTable) {
             synchronized (this.waitTable) {
                 this.stampTable.remove(tmObj);

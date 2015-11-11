@@ -14,6 +14,8 @@ import java.util.Map;
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     protected RMHashtable m_itemHT = new RMHashtable();
+
+    private Map<Integer, Map<String, RMItem>> readSet = new HashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
 
     // Basic operations on RMItem //
@@ -21,29 +23,43 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
         synchronized(m_itemHT) {
-            Map<String, RMItem> set = writeSet.get(transactionID);
+            // Check the writeSet
+            if (writeSet.get(transactionID).containsKey(key))
+                return writeSet.get(transactionID).get(key);
 
-            if (set.containsKey(key)) {
-                return set.get(key);
-            } else {
-                return (RMItem) m_itemHT.get(key);
-            }
+            // Check the readSet
+            if (readSet.get(transactionID).containsKey(key))
+                return readSet.get(transactionID).get(key);
+
+            // Else get data from database
+            RMItem item = (RMItem) m_itemHT.get(key);
+            this.readSet.get(transactionID).put(key, item);
+            return item;
         }
     }
 
     // Write a data item.
-    private void writeData(int id, String key, RMItem oldValue, RMItem newValue) {
+    private void writeData(int transactionID, String key, RMItem newValue, boolean commit) {
         synchronized(m_itemHT) {
-
-            m_itemHT.put(key, newValue);
+            if (commit) {
+                m_itemHT.put(key, newValue);
+            } else {
+                // save the data in the write set.
+                this.writeSet.get(transactionID).put(key, newValue);
+            }
         }
     }
 
     // Remove the item out of storage.
-    protected RMItem removeData(int id, String key, RMItem oldValue) {
+    protected void removeData(int transactionID, String key, boolean commit) {
         synchronized(m_itemHT) {
-
-            return (RMItem) m_itemHT.remove(key);
+            if (commit) {
+                m_itemHT.remove(key);
+            } else {
+                // save the data in the write set.
+                // tag it with null to mark for deletion.
+                this.writeSet.get(transactionID).put(key, null);
+            }
         }
     }
 
@@ -54,6 +70,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (writeSet.containsKey(transactionID)) return;
 
         writeSet.put(transactionID, new HashMap<String, RMItem>());
+        readSet.put(transactionID, new HashMap<String, RMItem>());
     }
 
     @Override
@@ -61,15 +78,34 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (!writeSet.containsKey(transactionID)) return;
 
         for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
-            this.writeData(transactionID, entry.getKey(), entry.getValue(), entry.getValue());
+            if (entry.getValue() == null) {
+                this.removeData(transactionID, entry.getKey(), true);
+            } else {
+                this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+            }
         }
+
+        this.readSet.remove(transactionID);
+        this.writeSet.remove(transactionID);
     }
 
     @Override
     public void abort(int transactionID) {
         if (!writeSet.containsKey(transactionID)) return;
-
+        this.readSet.remove(transactionID);
         this.writeSet.remove(transactionID);
+    }
+
+    @Override
+    public boolean isStillValid(int transactionID) {
+        for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
+            RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
+
+            if (inDatabase.equals(entry.getValue())) return false;
+        }
+
+        // Went through all the entries and they match.
+        return true;
     }
 
     // Basic operations on ReservableItem //
@@ -85,7 +121,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return false;
         } else {
             if (curObj.getReserved() == 0) {
-                removeData(id, curObj.getKey(), curObj);
+                removeData(id, curObj.getKey(), false);
                 Trace.info("RM::deleteItem(" + id + ", " + key + ") OK.");
                 return true;
             }
@@ -170,7 +206,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Flight newObj = new Flight(flightNumber, numSeats, flightPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), newObj, false);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK.");
         } else {
@@ -179,7 +215,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (flightPrice > 0) {
                 curObj.setPrice(flightPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), curObj, false);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK: "
                     + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
@@ -253,7 +289,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Car newObj = new Car(location, numCars, carPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), newObj, false);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK.");
         } else {
@@ -262,7 +298,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (carPrice > 0) {
                 curObj.setPrice(carPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), curObj, false);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK: "
                     + "cars = " + curObj.getCount() + ", price = $" + carPrice);
@@ -301,7 +337,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Room newObj = new Room(location, numRooms, roomPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), newObj, false);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK.");
         } else {
@@ -310,7 +346,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (roomPrice > 0) {
                 curObj.setPrice(roomPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), curObj, false);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK: "
                     + "rooms = " + curObj.getCount() + ", price = $" + roomPrice);

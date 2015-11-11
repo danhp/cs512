@@ -33,6 +33,9 @@ public interface ResourceManager {
     @WebMethod
     public void abort(int id);
 
+    @WebMethod
+    public boolean isStillValid(int id);
+
     // Flight operations //
     
     /* Add seats to a flight.  
