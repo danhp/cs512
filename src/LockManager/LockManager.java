@@ -66,16 +66,18 @@ public class LockManager
                         if (bConvert.get(0) == true) {
                             // lock conversion
 
+                            System.out.println("Lock Conversion : on " + dataObj.getDataName()
+                                    + " for transaction " + dataObj.getXId());
                             // remove hold READ locks
-                            trxnObj.setLockType(TrxnObj.READ);
-                            this.lockTable.remove(trxnObj);
 
-                            dataObj.setLockType(TrxnObj.READ);
-                            this.lockTable.remove(dataObj);
+
+                            trxnObj = (TrxnObj) lockTable.get(new TrxnObj(xid, strData, TrxnObj.READ));
+                            trxnObj.setLockType(TrxnObj.WRITE);
+
+                            dataObj = (DataObj) lockTable.get(new DataObj(xid, strData, TrxnObj.READ));
+                            dataObj.setLockType(TrxnObj.WRITE);
 
                             // add WRITE locks
-                            this.lockTable.add(trxnObj);
-                            this.lockTable.add(dataObj);
                         } else {
                             // a lock request that is not lock conversion
                             this.lockTable.add(trxnObj);
@@ -221,7 +223,20 @@ public class LockManager
 
                     //(1)
                     if (dataObj2.getLockType() == DataObj.READ) {
-                        bitset.set(0, true);    // READ->WRITE  bitset is set
+                        //we must check the other transactions to see if they have a lock
+                        //Then we can return true if there is a lock conflict, and conversion
+                        // of the lock cannot happen
+
+                        for (Object obj : vect) {
+                            if (((DataObj)obj).getXId() != dataObj.getXId()) {
+                                System.out.println("Object " + dataObj.getDataName() + "with Transaction "
+                                + dataObj.getXId() + " has requested WRITE lock, and currently has read lock " +
+                                "This cannot be granted as another transaction has a WRITE lock");
+                                return true;
+                            }
+                        }
+                        //set to true to show that we need a lock conversion
+                        bitset.set(0, true);  // READ->WRITE  bitset is set
                     } else if (dataObj2.getLockType() == DataObj.WRITE) {
                         throw new RedundantLockRequestException(dataObj.getXId(), "Redundant WRITE lock request");
                     }
@@ -230,8 +245,7 @@ public class LockManager
             else {
                 if (dataObj.getLockType() == DataObj.READ) {
                     if (dataObj2.getLockType() == DataObj.WRITE) {
-                        // transaction is requesting a READ lock and some other transaction
-                        // already has a WRITE lock on it ==> conflict
+
                         System.out.println("Want READ, someone has WRITE");
                         return true;
                     }
