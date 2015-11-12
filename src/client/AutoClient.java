@@ -1,5 +1,11 @@
 package client;
 
+import middleware.Operation;
+import middleware.Transaction;
+
+import java.util.List;
+import java.util.ArrayList;
+
 /**
  * Created by hmsimmonds on 15-11-12.
  * CLASS MADE FOR AUTOMATICALLY TESTING / RUNNING CLIENT CODE
@@ -19,7 +25,6 @@ public class AutoClient extends WSClient {
         int flightNum = 100;
         int flightSeats = 500;
         int flightPrice = 1000;
-
 
 
         try {
