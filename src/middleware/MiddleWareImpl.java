@@ -120,7 +120,6 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             Trace.error("Transaction " + id + " doesn't exist.");
             return false;
         }
-
         lockManager.UnlockAll(id);
         return transactionManager.commit(id);
     }
@@ -128,7 +127,11 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public boolean abort(int id) {
         // Check if transaction exists
-        if (!transactionManager.transactionExists(id)) { return false; }
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return false;
+        }
         lockManager.UnlockAll(id);
         return transactionManager.abort(id);
     }
@@ -155,6 +158,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return lockManager.Lock(id, data, type);
         } catch (DeadlockException e) {
             Trace.warn("Deadlock");
+            lockManager.UnlockAll(id);
             transactionManager.abort(id);
         }
         return false;

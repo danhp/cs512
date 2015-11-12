@@ -193,16 +193,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Flight newObj = new Flight(flightNumber, numSeats, flightPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), null, newObj);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK.");
         } else {
+            Flight old = new Flight(curObj);
+
             // Add seats to existing flight and update the price.
             curObj.setCount(curObj.getCount() + numSeats);
             if (flightPrice > 0) {
                 curObj.setPrice(flightPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), old, curObj);
             Trace.info("RM::addFlight(" + id + ", " + flightNumber
                     + ", $" + flightPrice + ", " + numSeats + ") OK: "
                     + "seats = " + curObj.getCount() + ", price = $" + flightPrice);
@@ -276,16 +278,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Car newObj = new Car(location, numCars, carPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), null, newObj);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK.");
         } else {
+            Car old = new Car(curObj);
+
             // Add count to existing object and update price.
             curObj.setCount(curObj.getCount() + numCars);
             if (carPrice > 0) {
                 curObj.setPrice(carPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), old, curObj);
             Trace.info("RM::addCars(" + id + ", " + location + ", "
                     + numCars + ", $" + carPrice + ") OK: "
                     + "cars = " + curObj.getCount() + ", price = $" + carPrice);
@@ -324,16 +328,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         if (curObj == null) {
             // Doesn't exist; add it.
             Room newObj = new Room(location, numRooms, roomPrice);
-            writeData(id, newObj.getKey(), curObj, newObj);
+            writeData(id, newObj.getKey(), null, newObj);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK.");
         } else {
+            Room old = new Room(curObj);
+
             // Add count to existing object and update price.
             curObj.setCount(curObj.getCount() + numRooms);
             if (roomPrice > 0) {
                 curObj.setPrice(roomPrice);
             }
-            writeData(id, curObj.getKey(), null, curObj);
+            writeData(id, curObj.getKey(), old, curObj);
             Trace.info("RM::addRooms(" + id + ", " + location + ", "
                     + numRooms + ", $" + roomPrice + ") OK: "
                     + "rooms = " + curObj.getCount() + ", price = $" + roomPrice);

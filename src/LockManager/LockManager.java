@@ -106,6 +106,7 @@ public class LockManager
     // remove all locks for this transaction in the lock table.
     public boolean UnlockAll(int xid) {
         System.out.println("Releasing all locks for " + xid);
+        System.out.println(this.waitTable);
 
         // if any parameter is invalid, then return false
         if (xid < 0) {
@@ -149,6 +150,7 @@ public class LockManager
                                     
                                     try {
                                         synchronized (waitObj.getThread())    {
+                                            Trace.info("Thread got write after sleeping.");
                                             waitObj.getThread().notify();
                                         }    
                                     }
@@ -173,6 +175,7 @@ public class LockManager
                             
                             try {
                                 synchronized (waitObj.getThread()) {
+                                    Trace.info(("Waking up a thread."));
                                     waitObj.getThread().notify();
                                 }    
                             }
