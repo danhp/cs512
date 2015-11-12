@@ -19,3 +19,9 @@ The TransactionManger, stored within the middleware is given the proxies of the 
 Within the Resource Managers, we created methods start,commit, and abort. Commit and start will simply remove or add transactions into the RM local store - each RM has its own store of transactions that act with the local RM. When we write / remove data from the item hash table within the RM, we will add operations to the local transactions. Note, within the abort method, we will ‘undo’ each operation within the transaction: ex, if the method was an ADD method to the DB, we will then remove the data added, and if it was a REMOVE method, we will then add the data back. This is the reason for the local store within the RM’s, is so we can keep a history of the transactions, and abort them if we need to. Once they have been committed, the transaction will be removed, and abort will no longer be possible. 
 
 Time-To-Live (TTL)
+
+
+Maintain a table of transactions and their expire time.
+Set the time when we start a new transaction.
+Reset the timer every time a new operation comes in.
+Every so often go through that list and and abort all the transaction whose expiretime is smaller than the currentTime.
