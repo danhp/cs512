@@ -24,8 +24,13 @@ public class Client extends WSClient {
             String serviceHost = args[1];
             int servicePort = Integer.parseInt(args[2]);
 
-            Client client = new Client(serviceName, serviceHost, servicePort);
 
+            //FOR AUTOCLIENT-----------------------------------------------//
+//            AutoClient autoClient = new AutoClient(serviceName, serviceHost, servicePort);
+//            autoClient.run();
+            //--------------------------------------------------------------//
+
+            Client client = new Client(serviceName, serviceHost, servicePort);
             client.run();
 
         } catch(Exception e) {
@@ -46,6 +51,7 @@ public class Client extends WSClient {
         int numRooms;
         int numCars;
         String location;
+
 
         String command = "";
         Vector arguments = new Vector();
