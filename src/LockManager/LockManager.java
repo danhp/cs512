@@ -141,10 +141,7 @@ public class LockManager
                                 // get all other transactions which have locks on the
                                 // data item just unlocked. 
                                 Vector vect1 = this.lockTable.elements(dataObj);
-                                System.out.println("lock table: "+this.lockTable.toString());
-                                System.out.println("waitobj "+ waitObj.toString());
-                                System.out.println("vect1: " + vect1.toString());
-                                
+
                                 // remove interrupted thread from waitTable only if no
                                 // other transaction has locked this data item
                                 if (vect1.size () == 0 || (vect1.size() == 1 && (((DataObj)vect1.get(0)).getXId() == waitObj.getXId()))) {

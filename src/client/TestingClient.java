@@ -56,9 +56,10 @@ public class TestingClient extends WSClient {
         int numCars;
         String location;
 
-
-        String command = "";
         Vector arguments = new Vector();
+
+        long totalTime = 0;
+        long timeForLastTransaction = 0;
 
         System.out.println("== Performance Analysis ==");
 
@@ -78,13 +79,32 @@ public class TestingClient extends WSClient {
         t2.add(new ArrayList<Object>() {{ add(3); add("1"); add("2"); add("1"); add("1"); }});
         t2.add(new ArrayList<Object>() {{ add(4); add("1"); add("3"); add("1"); add("1"); }});
 
-        long start = System.nanoTime();
 
-        for (int j = 0; j < 100; j++) {
+        // experiment variables
+        int transactiontested = 2;  // test t1 or t2
+        int numIter = 1000;             // loosely, program will run for how long
+        int sleepfactor = 1;        // 0 to not sleep between loops
+
+        System.out.println("Press Enter to start");
+        try { System.in.read(); } catch (IOException e) { e.printStackTrace(); }
+
+        for (int j = 0; j < numIter; j++) {
             System.out.println("Iteration " + j);
 
+            try {
+                System.out.println("Sleeping...");
+                int maxr = 100;
+                int min = 10;
+                int range = (maxr-min)+1;
+                long random = (long)Math.random() * range - min;
+                random = random - maxr/2;
+                Thread.sleep((long)(random * (10000-timeForLastTransaction) * sleepfactor));
+            } catch(InterruptedException ex) {
+                Thread.currentThread().interrupt();
+            }
+
             //Get a transaction
-            List<List<Object>> transaction = j/50<1 ? new ArrayList<List<Object>>(t1) : new ArrayList<List<Object>>(t2);
+            List<List<Object>> transaction = transactiontested==1 ? new ArrayList<List<Object>>(t1) : new ArrayList<List<Object>>(t2);
 
             // start a new transaction
             final String xid = Integer.toString(proxy.start());
@@ -92,6 +112,8 @@ public class TestingClient extends WSClient {
 
             // Add an abort operation
             transaction.add(new ArrayList<Object>() {{ add(25); add(xid); }});
+
+            long startOfTransaction = System.nanoTime();
 
             for (List<Object> operation : transaction) {
                 // Get an operation
@@ -633,11 +655,14 @@ public class TestingClient extends WSClient {
                     ex.printStackTrace();
                 }
             }
+
+            timeForLastTransaction= System.nanoTime() - startOfTransaction;
+            totalTime += timeForLastTransaction;
         }
 
-        long diff = System.nanoTime() - start;
 
-        System.out.println("Time elapsed: " + diff + "ns");
+        System.out.println("Time elapsed: " + totalTime + "ns");
+        System.out.println("Average per transaction: " + totalTime/numIter + "ns/tps");
     }
 
     public Vector parse(String command) {
