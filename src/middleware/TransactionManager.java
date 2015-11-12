@@ -45,6 +45,11 @@ public class TransactionManager {
     }
 
     public boolean commit(int id) {
+        if (!transactionExists(id)) {
+            Trace.error("Can't abort transaction - doesn't exist");
+            return false;
+        }
+
         //commit to rms
         for (Integer rm : activeTransactions.get(id)) {
             commitToRM(id, rm);
@@ -56,6 +61,11 @@ public class TransactionManager {
     }
 
     public boolean abort(int id) {
+        if (!transactionExists(id)) {
+            Trace.error("Can't abort transaction - doesn't exit");
+            return false;
+        }
+
         //undo the operations on customer
         Transaction transaction = this.transactions.get(id);
         for (Operation op : transaction.history()) {
