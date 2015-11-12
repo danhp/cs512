@@ -8,6 +8,7 @@ package server;
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
@@ -15,8 +16,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
-    private Map<Integer, Map<String, RMItem>> readSet = new HashMap<>();
-    private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
+    private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
+    private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
 
     // Basic operations on RMItem //
 
@@ -46,6 +47,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             } else {
                 // save the data in the write set.
                 this.writeSet.get(transactionID).put(key, newValue);
+
+                // save the data in the read set if not present
+                RMItem item = this.readSet.get(transactionID).get(key);
+                if (item == null) {
+                    item = (RMItem) m_itemHT.get(key);
+                    this.readSet.get(transactionID).put(key, item);
+                }
             }
         }
     }
@@ -67,43 +75,61 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
-        if (writeSet.containsKey(transactionID)) return;
-
-        writeSet.put(transactionID, new HashMap<String, RMItem>());
-        readSet.put(transactionID, new HashMap<String, RMItem>());
+        synchronized (writeSet) {
+            if (writeSet.containsKey(transactionID)) return;
+            writeSet.put(transactionID, new HashMap<String, RMItem>());
+        }
+        synchronized (readSet) {
+            readSet.put(transactionID, new HashMap<String, RMItem>());
+        }
     }
 
     @Override
     public void commit(int transactionID) {
-        if (!writeSet.containsKey(transactionID)) return;
+        synchronized (writeSet) {
+            if (!writeSet.containsKey(transactionID)) return;
 
-        for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
-            if (entry.getValue() == null) {
-                this.removeData(transactionID, entry.getKey(), true);
-            } else {
-                this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+            for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
+                if (entry.getValue() == null) {
+                    this.removeData(transactionID, entry.getKey(), true);
+                } else {
+                    this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+                }
             }
-        }
+            this.writeSet.remove(transactionID);
 
-        this.readSet.remove(transactionID);
-        this.writeSet.remove(transactionID);
+        }
+        synchronized (readSet) {
+            this.readSet.remove(transactionID);
+        }
     }
 
     @Override
     public void abort(int transactionID) {
-        if (!writeSet.containsKey(transactionID)) return;
-        this.readSet.remove(transactionID);
-        this.writeSet.remove(transactionID);
+        synchronized (this.writeSet) {
+            if (!writeSet.containsKey(transactionID)) return;
+            this.writeSet.remove(transactionID);
+        }
+        synchronized (this.readSet) {
+            this.readSet.remove(transactionID);
+        }
     }
 
     @Override
     public boolean isStillValid(int transactionID) {
-        for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
-            RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
+        synchronized (this.readSet) {
+            for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
 
-            if (inDatabase.equals(entry.getValue())) return false;
+                synchronized (m_itemHT) {
+                    RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
+
+                    if (inDatabase != null){
+                        if (inDatabase.equals(entry.getValue())) return false;
+                    }
+                }
+
+            }
         }
-
         // Went through all the entries and they match.
         return true;
     }
@@ -139,9 +165,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public void unreserveItem(int id, String key, String location, int count) {
         Trace.info("RM::unreserveItem(" + id + ", " + key + ") called.");
 
-        ReservableItem item = (ReservableItem) this.writeSet.get(id).get(key);
-        item.setReserved(item.getReserved() - count);
-        item.setCount(item.getCount() + 1);
+        synchronized (this.writeSet) {
+            ReservableItem item = (ReservableItem) this.writeSet.get(id).get(key);
+            item.setReserved(item.getReserved() - count);
+            item.setCount(item.getCount() + 1);
+        }
     }
 
     // Query the number of available seats/rooms/cars.

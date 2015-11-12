@@ -8,6 +8,7 @@ import javax.jws.WebService;
 import java.net.MalformedURLException;
 import java.util.*;
 import java.net.URL;
+import java.util.concurrent.ConcurrentHashMap;
 
 @WebService(endpointInterface = "middleware.ws.MiddleWare")
 public class MiddleWareImpl implements middleware.ws.MiddleWare {
@@ -64,8 +65,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     protected RMHashtable customerHT = new RMHashtable();
 
-    private Map<Integer, Map<String, RMItem>> readSet = new HashMap<>();
-    private Map<Integer, Map<String, RMItem>> writeSet = new HashMap<>();
+    private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
+    private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
 
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
@@ -112,31 +113,42 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // CUSTOMER TRANSACTIONS HELPERS
     public void startCustomer(int transactionID) {
-        if (writeSet.containsKey(transactionID)) return;
-
-        writeSet.put(transactionID, new HashMap<String, RMItem>());
-        readSet.put(transactionID, new HashMap<String, RMItem>());
+        synchronized (this.writeSet) {
+            if (writeSet.containsKey(transactionID)) return;
+            writeSet.put(transactionID, new HashMap<String, RMItem>());
+        }
+        synchronized (this.readSet) {
+            readSet.put(transactionID, new HashMap<String, RMItem>());
+        }
     }
 
     public void commitCustomer(int transactionID) {
-        if (!writeSet.containsKey(transactionID)) return;
+        synchronized (writeSet) {
+            if (!writeSet.containsKey(transactionID)) return;
 
-        for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
-            if (entry.getValue() == null) {
-                this.removeData(transactionID, entry.getKey(), true);
-            } else {
-                this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+            for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
+                if (entry.getValue() == null) {
+                    this.removeData(transactionID, entry.getKey(), true);
+                } else {
+                    this.writeData(transactionID, entry.getKey(), entry.getValue(), true);
+                }
             }
-        }
 
-        this.writeSet.remove(transactionID);
-        this.readSet.remove(transactionID);
+            this.writeSet.remove(transactionID);
+        }
+        synchronized (readSet) {
+            this.readSet.remove(transactionID);
+        }
     }
 
     public void abortCustomer(int transactionID) {
-        if (!writeSet.containsKey(transactionID)) return;
-        this.writeSet.remove(transactionID);
-        this.readSet.remove(transactionID);
+        synchronized (this.writeSet) {
+            if (!writeSet.containsKey(transactionID)) return;
+            this.writeSet.remove(transactionID);
+        }
+        synchronized (this.readSet) {
+            this.readSet.remove(transactionID);
+        }
     }
 
     // TRANSACTIONS

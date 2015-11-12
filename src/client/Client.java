@@ -632,11 +632,12 @@ public class Client extends WSClient {
                     if (outcome) {
                         System.out.println("Server successfully shut down");
                     } else {
-                        System.out.println("Transacations are still running. System shutdown was aborted");
+                        System.out.println("Transactions are still running. System shutdown was aborted");
                     }
 
                 } catch (Exception e) {
                     System.out.println("Server successfully shut down");
+                    System.exit(0);
                 }
                 break;
 
