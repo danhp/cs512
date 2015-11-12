@@ -73,7 +73,9 @@ public class TestingClient extends WSClient {
         t2.add(new ArrayList<Object>() {{ add(3); add("1"); add("2"); add("1"); add("1"); }});
         t2.add(new ArrayList<Object>() {{ add(4); add("1"); add("3"); add("1"); add("1"); }});
 
-        for (int j = 0; j < 5; j++) {
+        long start = System.nanoTime();
+
+        for (int j = 0; j < 100; j++) {
             System.out.println("Iteration " + j);
             //Get a transaction
             List<List<Object>> transaction = j/50<1 ? new ArrayList<List<Object>>(t1) : new ArrayList<List<Object>>(t2);
@@ -626,6 +628,10 @@ public class TestingClient extends WSClient {
                 }
             }
         }
+
+        long diff = System.nanoTime() - start;
+
+        System.out.println("Time elapsed: " + diff + "ns");
     }
 
     public Vector parse(String command) {
