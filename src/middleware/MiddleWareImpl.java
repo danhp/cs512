@@ -157,6 +157,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2))) return false;
 
         return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
@@ -164,6 +165,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2))) return false;
 
         return getFlightProxy().deleteFlight(id, flightNumber);
@@ -171,6 +173,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryFlight(int id, int flightNumber) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 1))) return 0;
 
         return getFlightProxy().queryFlight(id, flightNumber);
@@ -178,6 +181,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryFlightPrice(int id, int flightNumber) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 1))) return 0;
 
         return getFlightProxy().queryFlightPrice(id, flightNumber);
@@ -185,6 +189,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
 
         return getCarProxy().addCars(id, location, numCars, carPrice);
@@ -192,6 +197,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean deleteCars(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
 
         return getCarProxy().deleteCars(id, location);
@@ -199,6 +205,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryCars(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 1, 1))) return 0;
 
         return getCarProxy().queryCars(id, location);
@@ -206,6 +213,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryCarsPrice(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 1, 1))) return 0;
 
         return getCarProxy().queryCarsPrice(id, location);
@@ -213,6 +221,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
 
         return getRoomProxy().addRooms(id, location, numRooms, roomPrice);
@@ -220,6 +229,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean deleteRooms(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
 
         return getRoomProxy().deleteRooms(id, location);
@@ -227,6 +237,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryRooms(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 2, 1))) return 0;
 
         return getRoomProxy().queryRooms(id, location);
@@ -234,6 +245,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int queryRoomsPrice(int id, String location) {
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(location, 2, 1))) return 0;
 
         return getRoomProxy().queryRoomsPrice(id, location);
@@ -262,6 +274,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public boolean newCustomerId(int id, int customerId) {
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
 
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -282,6 +295,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public boolean deleteCustomer(int id, int customerId) {
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
 
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -315,6 +329,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         Trace.info("RM::getCustomerReservations(" + id + ", "
                 + customerId + ") called.");
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 1))) return null;
 
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -340,6 +355,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public String queryCustomerInfo(int id, int customerId) {
         Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 1))) return null;
 
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
@@ -363,7 +379,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
             return false;
         }
+
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
 
         if (!reserved) {
@@ -387,7 +406,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         boolean reserved = getCarProxy().reserveCar(id, customerId, location);
 
         if (!reserved) {
@@ -411,6 +432,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
 
         boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
@@ -432,31 +454,71 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public boolean reserveItinerary(int id, int customerId, Vector flightNumbers, String location, boolean car, boolean room) {
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
 
+        // List to abort in case one command fails.
+        Map<Integer, List<String>> saved = new HashMap<>(3);
+
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 
-        for (String number : flightNumbers) {
-            result = reserveFlight(id, customerId, Integer.parseInt(number));
+        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();) {
+            int number = Integer.parseInt(e.nextElement());
+            result = reserveFlight(id, customerId, number);
             if (result) {
+                // Add to list so that if we abort we know which to reset
+                saved.get(0).add(Integer.toString(number));
+
+                // Save to request locks later
                 if (!this.tm.addOperation(id, new Operation(Integer.toString(number), 0, 2))) return false;
+            } else {
+                this.resetReservation(id, customerId, saved);
+                return false;
             }
         }
 
         if (car) {
             result = reserveCar(id, customerId, location);
             if (result) {
+                // Add to list so that if we abort we know which to reset
+                saved.get(1).add(location);
+
+                // Save to request locks later
                 if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
+            } else {
+                this.resetReservation(id, customerId, saved);
+                return false;
             }
         }
 
         if (room) {
             result = reserveRoom(id, customerId, location);
             if (result) {
+                // Save to request locks later
                 if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
+            } else {
+                // Failed, so reset everything.
+                this.resetReservation(id, customerId, saved);
+                return false;
             }
         }
 
         return result;
+    }
+
+    private void resetReservation(int id, int customerId, Map<Integer, List<String>>  map) {
+        List<String> flightList = map.get(0);
+        for (String s : flightList) {
+           this.getFlightProxy().unreserveItem(id, s, s, 1);
+        }
+
+        List<String> carList = map.get(1);
+        if (carList != null) {
+            this.getCarProxy().unreserveItem(id, carList.get(0), carList.get(0), 1);
+        }
+
+        List<String> roomList = map.get(2);
+        if (roomList != null) {
+            this.getCarProxy().unreserveItem(id, roomList.get(0), roomList.get(0), 1);
+        }
     }
 
     @Override

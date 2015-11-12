@@ -94,6 +94,15 @@ public class TransactionManager {
                     return false;
                 }
 
+                // Check if we can still commit
+                if (!mw.getCarProxy().isStillValid(id) ||
+                        !mw.getFlightProxy().isStillValid(id) ||
+                        !mw.getRoomProxy().isStillValid(id)) {
+                    System.out.println("Transaction was aborted as current values don't match the readSet");
+                    this.abort(id);
+                    return false;
+                }
+
                 // Execute all the operations
                 mw.getCarProxy().commit(id);
                 mw.getFlightProxy().commit(id);

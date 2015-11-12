@@ -1,9 +1,7 @@
 package LockManager;
 
-import middleware.Transaction;
 import server.Trace;
 
-import javax.xml.crypto.Data;
 import java.util.BitSet;
 import java.util.Vector;
 

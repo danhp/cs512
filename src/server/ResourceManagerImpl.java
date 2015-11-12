@@ -133,9 +133,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
     }
 
+    // Called to abort a set of operations.
+    // Only affect the write set.
     @Override
     public void unreserveItem(int id, String key, String location, int count) {
-        ReservableItem item = (ReservableItem) readData(id, key);
+        Trace.info("RM::unreserveItem(" + id + ", " + key + ") called.");
+
+        ReservableItem item = (ReservableItem) this.writeSet.get(id).get(key);
         item.setReserved(item.getReserved() - count);
         item.setCount(item.getCount() + 1);
     }
