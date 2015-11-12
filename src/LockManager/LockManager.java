@@ -106,7 +106,6 @@ public class LockManager
     // remove all locks for this transaction in the lock table.
     public boolean UnlockAll(int xid) {
         System.out.println("Releasing all locks for " + xid);
-        System.out.println(this.waitTable);
 
         // if any parameter is invalid, then return false
         if (xid < 0) {
@@ -142,10 +141,13 @@ public class LockManager
                                 // get all other transactions which have locks on the
                                 // data item just unlocked. 
                                 Vector vect1 = this.lockTable.elements(dataObj);
+                                System.out.println("lock table: "+this.lockTable.toString());
+                                System.out.println("waitobj "+ waitObj.toString());
+                                System.out.println("vect1: " + vect1.toString());
                                 
                                 // remove interrupted thread from waitTable only if no
                                 // other transaction has locked this data item
-                                if (vect1.size () == 0) {
+                                if (vect1.size () == 0 || (vect1.size() == 1 && (((DataObj)vect1.get(0)).getXId() == waitObj.getXId()))) {
                                     this.waitTable.remove(waitObj);     
                                     
                                     try {
@@ -231,6 +233,15 @@ public class LockManager
                         throw new RedundantLockRequestException(dataObj.getXId(), "Redundant WRITE lock request");
                     }
                     else if (dataObj2.getLockType() == DataObj.READ) {
+                        for (Object obj : vect) {
+                            if (((DataObj)obj).getXId() != dataObj.getXId()) {
+                                System.out.println("Object " + dataObj.getDataName() + "with Transaction "
+                                        + dataObj.getXId() + " has requested WRITE lock, and currently has read lock " +
+                                        "This cannot be granted as another transaction has a WRITE lock");
+                                return true;
+                            }
+                        }
+
                         bitset.set(0, true);
                         Trace.info("Want WRITE, already have READ; CONVERT");
                     }
