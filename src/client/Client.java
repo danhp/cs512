@@ -636,9 +636,7 @@ public class Client extends WSClient {
                     }
 
                 } catch (Exception e) {
-                    System.out.println("EXCEPTION: ");
-                    System.out.println(e.getMessage());
-                    e.printStackTrace();
+                    System.out.println("Server successfully shut down");
                 }
                 break;
 

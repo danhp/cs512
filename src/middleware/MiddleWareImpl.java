@@ -452,9 +452,21 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         if (tm.isActive()) return false;
 
         // Shutdown all the RMs
-        this.getFlightProxy().shutdown();
-        this.getCarProxy().shutdown();
-        this.getRoomProxy().shutdown();
+        try {
+            this.getFlightProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
+        try {
+            this.getCarProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
+        try {
+            this.getRoomProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
 
         // Shutdown the middleware
         System.exit(0);
