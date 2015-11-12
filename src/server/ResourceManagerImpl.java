@@ -76,7 +76,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         //undo the operations
         Transaction transaction = this.transactions.get(id);
         List<Operation> history = transaction.history();
-        for (int i = transaction.history().size()-1; i>0; i++) {
+        Trace.info(history.toString());
+        for (int i = transaction.history().size()-1; i>=0; i--) {
             Operation op = history.get(i);
             this.undo(transaction.getId(), op);
         }

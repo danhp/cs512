@@ -1,5 +1,7 @@
 package middleware;
 
+import server.Trace;
+
 import java.util.ArrayList;
 import java.util.List;
 
@@ -16,7 +18,7 @@ public class Transaction {
     }
 
     public void addOperation(Operation op) {
-        Trace.info("Added operation " + op + " to transaction ")
+        Trace.info("Added operation " + op + " to transaction ");
         this.history.add(op);
     }
 
