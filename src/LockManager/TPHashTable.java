@@ -1,5 +1,7 @@
 package LockManager;
 
+import server.Trace;
+
 import java.util.Vector;
 import java.util.Enumeration;
 
@@ -23,7 +25,12 @@ public class TPHashTable
             this.vect.addElement( new Vector(this.HASH_DEPTH) );
         }
     }
-    
+
+    @Override
+    public String toString() {
+        return vect.toString();
+    }
+
     public int getSize()
     {
         return iSize;
@@ -55,10 +62,10 @@ public class TPHashTable
         }
         
         vectSlot = (Vector) vect.elementAt( hashSlot );
-        
+
         XObj xobj2;
         int size = vectSlot.size();
-        for (int i = 0; i < (size-1); i++) {        //FIX inverted loop as described on board
+        for (int i = 0; i < size; i++) {        //FIX inverted loop as described on board
             xobj2 = (XObj) vectSlot.elementAt(i);
             if ( xobj.key() == xobj2.key() ) {
                 elemVect.addElement(xobj2);

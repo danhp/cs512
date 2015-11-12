@@ -369,6 +369,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         if (!reserved) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: flight cannot be reserved.");
+            if (!this.tm.addOperation(id, new Operation(Integer.toString(flightNumber), 0, 2))) return false;
             return false;
         }
 
@@ -392,6 +393,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         if (!reserved) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Car.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+            if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
             return false;
         }
 
@@ -410,11 +412,13 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), 3, 2))) return false;
+
         boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
 
         if (!reserved) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + Room.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+            if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
             return false;
         }
 
@@ -431,16 +435,25 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 
-        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();) {
-            result = reserveFlight(id, customerId, Integer.parseInt(e.nextElement()));
+        for (String number : flightNumbers) {
+            result = reserveFlight(id, customerId, Integer.parseInt(number));
+            if (result) {
+                if (!this.tm.addOperation(id, new Operation(Integer.toString(number), 0, 2))) return false;
+            }
         }
 
         if (car) {
             result = reserveCar(id, customerId, location);
+            if (result) {
+                if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
+            }
         }
 
         if (room) {
             result = reserveRoom(id, customerId, location);
+            if (result) {
+                if (!this.tm.addOperation(id, new Operation(location, 2, 2))) return false;
+            }
         }
 
         return result;
