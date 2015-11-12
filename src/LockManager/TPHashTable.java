@@ -65,7 +65,7 @@ public class TPHashTable
 
         XObj xobj2;
         int size = vectSlot.size();
-        for (int i = 0; i <= size; i++) {        //FIX inverted loop as described on board
+        for (int i = 0; i < size; i++) {        //FIX inverted loop as described on board
             xobj2 = (XObj) vectSlot.elementAt(i);
             if ( xobj.key() == xobj2.key() ) {
                 elemVect.addElement(xobj2);

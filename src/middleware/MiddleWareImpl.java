@@ -135,104 +135,121 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
 
-    @Override
-    public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
+    private boolean getLock(int id, String data, int type) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) { return false; }
+
+        // Try to acquire a lock
         try {
-            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
-                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-                return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
-            }
+            return lockManager.Lock(id, data, type);
         } catch (DeadlockException e) {
             Trace.warn("Deadlock");
             transactionManager.abort(id);
+        }
+        return false;
+    }
+
+    @Override
+    public boolean addFlight(int id, int flightNumber, int numSeats, int flightPrice) {
+        if (getLock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
+            transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+            return getFlightProxy().addFlight(id, flightNumber, numSeats, flightPrice);
         }
         return false;
     }
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
-        try {
-            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
-                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-                return getFlightProxy().deleteFlight(id, flightNumber);
-            }
-        } catch (DeadlockException e) {
-            Trace.warn("Deadlock");
-            transactionManager.abort(id);
+        if (getLock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) {
+            transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+            return getFlightProxy().deleteFlight(id, flightNumber);
         }
         return false;
     }
 
     @Override
     public int queryFlight(int id, int flightNumber) {
-        try {
-            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
-                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-                return getFlightProxy().queryFlight(id, flightNumber);
-            }
-        } catch (DeadlockException e) {
-            Trace.warn("Deadlock");
-            transactionManager.abort(id);
+        if (getLock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
+            return getFlightProxy().queryFlight(id, flightNumber);
         }
-        return -1;
+        return 0;
     }
 
     @Override
     public int queryFlightPrice(int id, int flightNumber) {
-        try {
-            if (lockManager.Lock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
-                transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
-                return getFlightProxy().queryFlightPrice(id, flightNumber);
-            }
-        } catch (DeadlockException e) {
-            Trace.warn("Deadlock");
-            transactionManager.abort(id);
+        if (getLock(id, "flight-" + Integer.toString(flightNumber), LockManager.READ)) {
+            return getFlightProxy().queryFlightPrice(id, flightNumber);
         }
-        return -1;
+        return 0;
     }
 
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
-        transactionManager.enlist(id, CAR_PROXY_INDEX);
-        return getCarProxy().addCars(id, location, numCars, carPrice);
+        if (getLock(id, "car-" + location, LockManager.WRITE)) {
+            transactionManager.enlist(id, CAR_PROXY_INDEX);
+            return getCarProxy().addCars(id, location, numCars, carPrice);
+        }
+        return false;
     }
 
     @Override
     public boolean deleteCars(int id, String location) {
-        transactionManager.enlist(id, CAR_PROXY_INDEX);
-        return getCarProxy().deleteCars(id, location);
+        if (getLock(id, "car-" + location, LockManager.WRITE)) {
+            transactionManager.enlist(id, CAR_PROXY_INDEX);
+            return getCarProxy().deleteCars(id, location);
+        }
+        return false;
     }
 
     @Override
     public int queryCars(int id, String location) {
-        return getCarProxy().queryCars(id, location);
+        if (getLock(id, "car-" + location, LockManager.READ)) {
+            return getCarProxy().queryCars(id, location);
+        }
+        return 0;
     }
 
     @Override
     public int queryCarsPrice(int id, String location) {
-        return getCarProxy().queryCarsPrice(id, location);
+        if (getLock(id, "car-" + location, LockManager.READ)) {
+            return getCarProxy().queryCarsPrice(id, location);
+        }
+        return 0;
     }
 
+
     @Override
-    public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
-        transactionManager.enlist(id, ROOM_PROXY_INDEX);
-        return getRoomProxy().addRooms(id, location, numRooms, roomPrice);
+    public boolean addRooms(int id, String location, int numRooms, int carPrice) {
+        if (getLock(id, "car-" + location, LockManager.WRITE)) {
+            transactionManager.enlist(id, CAR_PROXY_INDEX);
+            return getRoomProxy().addRooms(id, location, numRooms, carPrice);
+        }
+        return false;
     }
 
     @Override
     public boolean deleteRooms(int id, String location) {
-        transactionManager.enlist(id, ROOM_PROXY_INDEX);
-        return getRoomProxy().deleteRooms(id, location);
+        if (getLock(id, "car-" + location, LockManager.WRITE)) {
+            transactionManager.enlist(id, CAR_PROXY_INDEX);
+            return getRoomProxy().deleteRooms(id, location);
+        }
+        return false;
     }
 
     @Override
     public int queryRooms(int id, String location) {
-        return getRoomProxy().queryRooms(id, location);
+        if (getLock(id, "car-" + location, LockManager.READ)) {
+            return getRoomProxy().queryRooms(id, location);
+        }
+        return 0;
     }
 
     @Override
     public int queryRoomsPrice(int id, String location) {
-        return getRoomProxy().queryRoomsPrice(id, location);
+        if (getLock(id, "car-" + location, LockManager.READ)) {
+            return getRoomProxy().queryRoomsPrice(id, location);
+        }
+        return 0;
     }
 
     // Customer operations //
@@ -257,7 +274,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
             cust = new Customer(customerId);
-            writeData(id, cust.getKey(), null, cust);
+
+            // Get a lock on the new customer object
+            if (getLock(id, cust.getKey(), LockManager.WRITE)) {
+                writeData(id, cust.getKey(), null, cust);
+            }
+
             Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") OK.");
             return true;
         } else {
@@ -271,28 +293,38 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     @Override
     public boolean deleteCustomer(int id, int customerId) {
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::deleteCustomer(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            return false;
-        } else {
 
-            // Remove the customer from the storage.
-            removeData(id, cust.getKey(), cust);
-            Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
-            return true;
+        if (getLock(id, Customer.getKey(customerId), LockManager.READ)) {
+            Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+            if (cust == null) {
+                Trace.warn("RM::deleteCustomer(" + id + ", "
+                        + customerId + ") failed: customer doesn't exist.");
+                return false;
+            } else {
+                if (getLock(id, cust.getKey(), lockManager.WRITE)) {
+                    // Remove the customer from the storage.
+                    removeData(id, cust.getKey(), cust);
+                    Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") OK.");
+                    return true;
+                }
+            }
         }
+
+        return false;
     }
 
     private boolean customerExists(int id, int customerId) {
+        if (!getLock(id, Customer.getKey(customerId), LockManager.READ)) return false;
+
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         return (cust != null);
     }
 
     public void setCustomerReservation(int id, int customerId, String key, String location, int price) {
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        cust.reserve(key, location, price);
+        if (getLock(id, Customer.getKey(customerId), lockManager.WRITE)) {
+            Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+            cust.reserve(key, location, price);
+        }
     }
 
     // Return data structure containing customer reservation info.
@@ -301,40 +333,48 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public Object[] getCustomerReservations(int id, int customerId) {
         Trace.info("RM::getCustomerReservations(" + id + ", "
                 + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.info("RM::getCustomerReservations(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            return null;
-        } else {
-            Collection<Object> col = new ArrayList<Object>();
-            col.addAll(cust.getReservations().keySet());
+        if (getLock(id, Customer.getKey(customerId), LockManager.READ)) {
+            Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+            if (cust == null) {
+                Trace.info("RM::getCustomerReservations(" + id + ", "
+                        + customerId + ") failed: customer doesn't exist.");
+                return null;
+            } else {
+                Collection<Object> col = new ArrayList<Object>();
+                col.addAll(cust.getReservations().keySet());
 
-            Collection<ReservedItem> ris = cust.getReservations().values();
-            for (ReservedItem ri : ris) {
-                col.add(ri.getCount());
+                Collection<ReservedItem> ris = cust.getReservations().values();
+                for (ReservedItem ri : ris) {
+                    col.add(ri.getCount());
+                }
+
+                return col.toArray();
             }
-
-            return col.toArray();
         }
+
+        return new Object[]{};
     }
 
     // Return a bill.
     @Override
     public String queryCustomerInfo(int id, int customerId) {
         Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + ") called.");
-        Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-        if (cust == null) {
-            Trace.warn("RM::queryCustomerInfo(" + id + ", "
-                    + customerId + ") failed: customer doesn't exist.");
-            // Returning an empty bill means that the customer doesn't exist.
-            return "";
-        } else {
-            String s = cust.printBill();
-            Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
-            System.out.println(s);
-            return s;
+        if (getLock(id, Customer.getKey(customerId), LockManager.READ)) {
+            Customer cust = (Customer) readData(id, Customer.getKey(customerId));
+            if (cust == null) {
+                Trace.warn("RM::queryCustomerInfo(" + id + ", "
+                        + customerId + ") failed: customer doesn't exist.");
+                // Returning an empty bill means that the customer doesn't exist.
+                return "";
+            } else {
+                String s = cust.printBill();
+                Trace.info("RM::queryCustomerInfo(" + id + ", " + customerId + "): \n");
+                System.out.println(s);
+                return s;
+            }
         }
+
+        return "";
     }
 
     @Override
@@ -344,6 +384,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                     + Flight.getKey(flightNumber) + ", " + flightNumber + ") failed: customer doesn't exist.");
             return false;
         }
+
+        // Try to get a write lock on flight object
+        if (!getLock(id, "flight-"+Integer.toString(flightNumber), LockManager.WRITE)) return false;
 
         boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
 
@@ -367,11 +410,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        // Try to get a write lock on flight object
+        if (!getLock(id, "car-"+location, LockManager.WRITE)) return false;
+
         boolean reserved = getCarProxy().reserveCar(id, customerId, location);
 
         if (!reserved) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-                    + Car.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+                    + Car.getKey(location) + ", " + location + ") failed: car cannot be reserved.");
             return false;
         }
 
@@ -389,11 +435,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             return false;
         }
 
+        // Try to get a write lock on flight object
+        if (!getLock(id, "room-"+location, LockManager.WRITE)) return false;
+
         boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
 
         if (!reserved) {
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
-                    + Room.getKey(location) + ", " + location + ") failed: flight cannot be reserved.");
+                    + Room.getKey(location) + ", " + location + ") failed: room cannot be reserved.");
             return false;
         }
 

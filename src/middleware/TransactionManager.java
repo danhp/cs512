@@ -45,11 +45,6 @@ public class TransactionManager {
     }
 
     public boolean commit(int id) {
-        if (getTransaction(id) == null) {
-            Trace.error("Commit: Transaction with ID: " + id + " does not exist");
-            return false;
-        }
-
         //commit to rms
         for (Integer rm : activeTransactions.get(id)) {
             commitToRM(id, rm);
@@ -61,11 +56,6 @@ public class TransactionManager {
     }
 
     public boolean abort(int id) {
-        if (getTransaction(id) == null) {
-            Trace.error("Abort: Transaction with ID: " + id + " does not exist");
-            return false;
-        }
-
         //undo the operations on customer
         Transaction transaction = this.transactions.get(id);
         for (Operation op : transaction.history()) {
@@ -116,10 +106,6 @@ public class TransactionManager {
     public void enlist(int id, int rmIndex) {
         //add operation to transaction with Id
         List<Integer> proxies = activeTransactions.get(id);
-        if (proxies == null) {
-            Trace.error("Enlist: Transaction with ID: " + id + " does not exist");
-            return;
-        }
         if (!proxies.contains(rmIndex)) {
             proxies.add(rmIndex);
             startToRM(id, rmIndex);
@@ -137,8 +123,6 @@ public class TransactionManager {
     }
 
     public boolean transactionExists(int id) {
-        if (activeTransactions.containsKey(id)) {
-            return true;
-        } else return false;
+        return activeTransactions.containsKey(id);
     }
 }
