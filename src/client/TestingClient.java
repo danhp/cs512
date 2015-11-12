@@ -63,11 +63,16 @@ public class TestingClient extends WSClient {
         System.out.println("== Performance Analysis ==");
 
         List<List<Object>> t1 = new ArrayList<List<Object>>();
+
+        // TRANSACTION TYPES
+
+        //t1 has 3 calls to flight rm (add) (start and abort are added later in the for loop)
         //command id params
         t1.add(new ArrayList<Object>() {{ add(2); add("0"); add("1"); add("1"); add("1"); }});
         t1.add(new ArrayList<Object>() {{ add(2); add("0"); add("1"); add("1"); add("1"); }});
         t1.add(new ArrayList<Object>() {{ add(2); add("0"); add("1"); add("1"); add("1"); }});
 
+        //t2 has a call to each rm (add)
         List<List<Object>> t2 = new ArrayList<List<Object>>();
         t2.add(new ArrayList<Object>() {{ add(2); add("1"); add("1"); add("1"); add("1"); }});
         t2.add(new ArrayList<Object>() {{ add(3); add("1"); add("2"); add("1"); add("1"); }});
@@ -77,6 +82,7 @@ public class TestingClient extends WSClient {
 
         for (int j = 0; j < 100; j++) {
             System.out.println("Iteration " + j);
+
             //Get a transaction
             List<List<Object>> transaction = j/50<1 ? new ArrayList<List<Object>>(t1) : new ArrayList<List<Object>>(t2);
 
