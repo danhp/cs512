@@ -115,12 +115,20 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public boolean commit(int id) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return false;
+        }
+
         lockManager.UnlockAll(id);
         return transactionManager.commit(id);
     }
 
     @Override
     public boolean abort(int id) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) { return false; }
         lockManager.UnlockAll(id);
         return transactionManager.abort(id);
     }
@@ -137,7 +145,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     private boolean getLock(int id, String data, int type) {
         // Check if transaction exists
-        if (!transactionManager.transactionExists(id)) { return false; }
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return false;
+        }
 
         // Try to acquire a lock
         try {

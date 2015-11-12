@@ -39,8 +39,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (t!=null)
                 t.addOperation(new Operation(key, oldValue, type));
 
-            System.out.println("Saved transaction " + t);
-
             m_itemHT.put(key, newValue);
         }
     }
@@ -87,7 +85,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     // Undo `operation`
     public void undo(int id, Operation operation) {
-        System.out.println("Undoing xid " + id + " operation " + operation);
+        Trace.info("Undoing xid " + id + " operation " + operation);
 
         // note id=-1 so that the operation won't be saved
         if (operation.isAdd())

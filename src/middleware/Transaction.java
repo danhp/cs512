@@ -16,6 +16,7 @@ public class Transaction {
     }
 
     public void addOperation(Operation op) {
+        Trace.info("Added operation " + op + " to transaction ")
         this.history.add(op);
     }
 
