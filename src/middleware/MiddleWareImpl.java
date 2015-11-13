@@ -71,18 +71,20 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
         synchronized(customerHT) {
-            // Check the writeSet
-            if (writeSet.get(transactionID).containsKey(key))
-                return writeSet.get(transactionID).get(key);
+            synchronized (readSet) {
+                // Check the writeSet
+                if (writeSet.get(transactionID).containsKey(key))
+                    return writeSet.get(transactionID).get(key);
 
-            // Check the readSet
-            if (readSet.get(transactionID).containsKey(key))
-                return readSet.get(transactionID).get(key);
+                // Check the readSet
+                if (readSet.get(transactionID).containsKey(key))
+                    return readSet.get(transactionID).get(key);
 
-            // Else get data from database
-            RMItem item = (RMItem) customerHT.get(key);
-            this.readSet.get(transactionID).put(key, item);
-            return item;
+                // Else get data from database
+                RMItem item = (RMItem) customerHT.get(key);
+                this.readSet.get(transactionID).put(key, item);
+                return item;
+            }
         }
     }
 
@@ -108,6 +110,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                 // tag it with null to mark for deletion
                 this.writeSet.get(transactionID).put(key, null);
             }
+        }
+    }
+
+    // Unreserve an item at the customer as the transaction failed
+    private void unreserveItem(int transactionID, int custId, String key) {
+        Customer cust = (Customer) readData(transactionID, Customer.getKey(custId));
+        if (cust != null) {
+            cust.unreserve(key);
         }
     }
 
@@ -468,6 +478,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
         // List to abort in case one command fails.
         Map<Integer, List<String>> saved = new HashMap<>(3);
+        saved.put(0, new ArrayList<String>());
+        saved.put(1, new ArrayList<String>());
+        saved.put(2, new ArrayList<String>());
 
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
@@ -477,7 +490,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             result = reserveFlight(id, customerId, number);
             if (result) {
                 // Add to list so that if we abort we know which to reset
-                saved.get(0).add(Integer.toString(number));
+                saved.get(0).add("flight-" + Integer.toString(number));
 
                 // Save to request locks later
                 if (!this.tm.addOperation(id, new Operation(Integer.toString(number), 0, 2))) return false;
@@ -491,7 +504,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             result = reserveCar(id, customerId, location);
             if (result) {
                 // Add to list so that if we abort we know which to reset
-                saved.get(1).add(location);
+                saved.get(1).add("car-" + location);
 
                 // Save to request locks later
                 if (!this.tm.addOperation(id, new Operation(location, 1, 2))) return false;
@@ -519,17 +532,20 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private void resetReservation(int id, int customerId, Map<Integer, List<String>>  map) {
         List<String> flightList = map.get(0);
         for (String s : flightList) {
-           this.getFlightProxy().unreserveItem(id, s, s, 1);
+            this.getFlightProxy().unreserveItem(id, s, s, 1);
+            this.unreserveItem(id, customerId, s);
         }
 
         List<String> carList = map.get(1);
-        if (carList != null) {
+        if (!carList.isEmpty()) {
             this.getCarProxy().unreserveItem(id, carList.get(0), carList.get(0), 1);
+            this.unreserveItem(id, customerId, carList.get(0));
         }
 
         List<String> roomList = map.get(2);
-        if (roomList != null) {
+        if (!roomList.isEmpty()) {
             this.getCarProxy().unreserveItem(id, roomList.get(0), roomList.get(0), 1);
+            this.unreserveItem(id, customerId, roomList.get(0));
         }
     }
 

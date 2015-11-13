@@ -167,8 +167,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         synchronized (this.writeSet) {
             ReservableItem item = (ReservableItem) this.writeSet.get(id).get(key);
-            item.setReserved(item.getReserved() - count);
-            item.setCount(item.getCount() + 1);
+            if (item != null) {
+                item.setReserved(item.getReserved() - count);
+                item.setCount(item.getCount() + 1);
+            }
         }
     }
 

@@ -10,7 +10,7 @@ import java.util.concurrent.ConcurrentHashMap;
 public class TransactionManager {
 
     // 1 min timeout
-    private static long TRANSACTION_TIMEOUT = 30000;
+    private static long TRANSACTION_TIMEOUT = 60000;
 
     private MiddleWareImpl mw;
 
