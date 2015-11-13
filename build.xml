@@ -244,6 +244,17 @@
         </java>
     </target>
 
+    <target name="run-testingclient" >
+        <java classname="client.TestingClient">
+            <classpath>
+                <path refid="jaxws.classpath"/>
+                <pathelement location="${basedir}/build/classes"/>
+            </classpath>
+            <arg value="${middleware.name}"/>
+            <arg value="${middleware.host}"/>
+            <arg value="${middleware.port}"/>
+        </java>
+    </target>
     <target name="build-main">
         <javac
             fork="true"

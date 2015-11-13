@@ -24,7 +24,7 @@ public class Client extends WSClient {
             String serviceHost = args[1];
             int servicePort = Integer.parseInt(args[2]);
 
-            TestingClient client = new TestingClient(serviceName, serviceHost, servicePort);
+            Client client = new Client(serviceName, serviceHost, servicePort);
             client.run();
 
         } catch(Exception e) {

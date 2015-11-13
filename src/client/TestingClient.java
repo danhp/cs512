@@ -28,12 +28,6 @@ public class TestingClient extends WSClient {
             String serviceHost = args[1];
             int servicePort = Integer.parseInt(args[2]);
 
-
-            //FOR AUTOCLIENT-----------------------------------------------//
-//            AutoClient autoClient = new AutoClient(serviceName, serviceHost, servicePort);
-//            autoClient.run();
-            //--------------------------------------------------------------//
-
             TestingClient client = new TestingClient(serviceName, serviceHost, servicePort);
             client.run();
 
@@ -82,7 +76,7 @@ public class TestingClient extends WSClient {
 
         // experiment variables
         int transactiontested = 2;  // test t1 or t2
-        int numIter = 1000;             // loosely, program will run for how long
+        int numIter = 50;             // loosely, program will run for how long
         int sleepfactor = 1;        // 0 to not sleep between loops
         long sleep = 10000;
 
