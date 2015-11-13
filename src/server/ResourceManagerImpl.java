@@ -60,14 +60,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public void start(int id) {
         System.out.println("Starting transaction " + id);
-        this.transactions.put(id, new Transaction(id));
+        synchronized (transactions) {
+            this.transactions.put(id, new Transaction(id));
+        }
     }
 
     @Override
     public void commit(int id) {
         Trace.info("Committing transaction " + id);
         //nothing to do but to remove the transactions
-        this.transactions.remove(id);
+        synchronized (transactions) {
+            this.transactions.remove(id);
+        }
     }
 
     @Override
@@ -75,13 +79,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("Aborting transaction " + id);
         //undo the operations
         Transaction transaction = this.transactions.get(id);
-        List<Operation> history = transaction.history();
-        Trace.info(history.toString());
-        for (int i = transaction.history().size()-1; i>=0; i--) {
-            Operation op = history.get(i);
-            this.undo(transaction.getId(), op);
+        synchronized (transaction) {
+            List<Operation> history = transaction.history();
+            Trace.info(history.toString());
+            for (int i = transaction.history().size() - 1; i >= 0; i--) {
+                Operation op = history.get(i);
+                this.undo(transaction.getId(), op);
+            }
         }
-        this.transactions.remove(id);
+
+        synchronized (this.transactions) {
+            this.transactions.remove(id);
+        }
     }
 
     // Undo `operation`
