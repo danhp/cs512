@@ -27,8 +27,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private LockManager lockManager;
 
     public MiddleWareImpl() {
-//        String hosts[] = {"142.157.165.20","142.157.165.20","142.157.165.113","142.157.165.113" };
-        String hosts[] = {"localhost","localhost","localhost" };
+        String hosts[] = {"142.157.169.58","142.157.144.29","142.157.144.29","142.157.169.58" };
+//        String hosts[] = {"localhost","localhost","localhost" };
         int[] ports = {4000,4001,4002};
 
         setup(hosts, ports);
