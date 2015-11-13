@@ -3,15 +3,15 @@
 
     <property name="server.name" value="rm"/>
 
-    <property name="server1.host" value="localhost"/>
+    <property name="server1.host" value="142.157.169.58"/>
     <property name="server1.port" value="4000"/>
-    <property name="server2.host" value="localhost"/>
+    <property name="server2.host" value="142.157.165.27"/>
     <property name="server2.port" value="4001"/>
-    <property name="server3.host" value="localhost"/>
+    <property name="server3.host" value="142.157.144.29"/>
     <property name="server3.port" value="4002"/>
 
     <property name="middleware.name" value="middleware"/>
-    <property name="middleware.host" value="localhost"/>
+    <property name="middleware.host" value="142.157.169.58"/>
     <property name="middleware.port" value="7000"/>
 
     <path id="jaxws.classpath">
