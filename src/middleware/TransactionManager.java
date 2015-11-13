@@ -188,7 +188,15 @@ public class TransactionManager {
     }
 
     public boolean transactionExists(int id) {
-        return activeTransactions.containsKey(id);
+        synchronized (activeTransactions) {
+            return activeTransactions.containsKey(id);
+        }
+    }
+
+    public boolean isActive() {
+        synchronized (this.activeTransactions) {
+            return !this.activeTransactions.isEmpty();
+        }
     }
 
     public void resetTimer(int transactionID) {

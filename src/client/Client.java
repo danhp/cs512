@@ -619,6 +619,26 @@ public class Client extends WSClient {
                         ex.printStackTrace();
                     }
                     break;
+                case 26:
+                    if (arguments.size() != 1) {
+                        wrongNumber();
+                        break;
+                    }
+                    System.out.println("Shutting down the servers");
+                    try {
+                        boolean outcome = proxy.shutdown();
+
+                        if (outcome) {
+                            System.out.println("Server successfully shut down");
+                        } else {
+                            System.out.println("Transactions are still running. System shutdown was aborted");
+                        }
+
+                    } catch (Exception e) {
+                        System.out.println("Server successfully shut down");
+                        System.exit(0);
+                    }
+                    break;
 
             default:
                 System.out.println("The interface does not support this command.");
