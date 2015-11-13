@@ -78,7 +78,7 @@ public class TestingClient extends WSClient {
         int transactiontested = 2;  // test t1 or t2
         int numIter = 100;             // loosely, program will run for how long
         int sleepfactor = 1;        // 0 to not sleep between loops
-        long sleep = 1250;
+        long sleep = 10000;
 
         System.out.println("Press Enter to start");
         try { System.in.read(); } catch (IOException e) { e.printStackTrace(); }

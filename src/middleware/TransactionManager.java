@@ -80,6 +80,10 @@ public class TransactionManager {
             this.activeTransactions.put(id, new ArrayList<Integer>());
         }
 
+        synchronized (expireTimeMap) {
+            this.expireTimeMap.put(id, new ExpireTime(System.currentTimeMillis() + TRANSACTION_TIMEOUT));
+        }
+
         return id;
     }
 
