@@ -90,7 +90,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                 type = ADD_NEW; // operation is add
             Transaction t = this.transactionManager.getTransaction(id);
             if (t!=null)
-                t.addOperation(new Operation(key, oldValue, type));
+                synchronized (t) {
+                    t.addOperation(new Operation(key, oldValue, type));
+                }
 
             m_itemHT.put(key, newValue);
         }
@@ -102,7 +104,9 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized(m_itemHT) {
             Transaction t = this.transactionManager.getTransaction(id);
             if (t != null)
-                this.transactionManager.getTransaction(id).addOperation(new Operation(key, oldValue, DELETE));
+                synchronized (t) {
+                    t.addOperation(new Operation(key, oldValue, DELETE));
+                }
 
             return (RMItem) m_itemHT.remove(key);
         }
@@ -143,8 +147,25 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             removeData(-1, operation.getKey(), null);
         else if (operation.isOvewrite() || operation.isDelete())
             writeData(-1, operation.getKey(), null, operation.getItem());
+        else if (operation.isReserve()) {
+            Customer cust = (Customer) operation.getItem();
+            if (operation.getOldCount() == 0 && operation.getOldPrice() == 0) { //unreserve
+                Trace.info("Undoing reserve: Remove item with key " + operation.getRKey());
+                cust.removeReservedItem(operation.getRKey());
+            } else {
+                Trace.info("Undoing reserve: Reducing counts");
+                ReservedItem reservedItem = cust.getReservedItem(((Customer) operation.getItem()).getKey());
+                if (reservedItem != null) {
+                    synchronized (reservedItem) {
+                        reservedItem.setCount(operation.getOldCount());
+                        reservedItem.setPrice(operation.getOldPrice());
+                    }
+                } else {
+                    Trace.error("ReservedItem doesn't exist.");
+                }
+            }
+        }
     }
-
 
     private boolean getLock(int id, String data, int type) {
         // Check if transaction exists
@@ -271,6 +292,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     @Override
     public int newCustomer(int id) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return -1;
+        }
+
         Trace.info("INFO: RM::newCustomer(" + id + ") called.");
         // Generate a globally unique Id for the new customer.
         int customerId = Integer.parseInt(String.valueOf(id) +
@@ -285,6 +312,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // This method makes testing easier.
     @Override
     public boolean newCustomerId(int id, int customerId) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return false;
+        }
+
         Trace.info("INFO: RM::newCustomer(" + id + ", " + customerId + ") called.");
         Customer cust = (Customer) readData(id, Customer.getKey(customerId));
         if (cust == null) {
@@ -307,6 +340,12 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     // Delete customer from the database.
     @Override
     public boolean deleteCustomer(int id, int customerId) {
+        // Check if transaction exists
+        if (!transactionManager.transactionExists(id)) {
+            Trace.error("Transaction " + id + " doesn't exist.");
+            return false;
+        }
+
         Trace.info("RM::deleteCustomer(" + id + ", " + customerId + ") called.");
 
         if (getLock(id, Customer.getKey(customerId), LockManager.READ)) {
@@ -338,7 +377,34 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     public void setCustomerReservation(int id, int customerId, String key, String location, int price) {
         if (getLock(id, Customer.getKey(customerId), lockManager.WRITE)) {
             Customer cust = (Customer) readData(id, Customer.getKey(customerId));
-            cust.reserve(key, location, price);
+            if (cust != null) {
+                synchronized (cust) {
+                    ReservedItem item = cust.getReservedItem(key);
+                    int oldcount;
+                    int oldprice;
+                    String oldkey;
+                    if (item == null) {
+                        oldcount = 0;
+                        oldprice = 0;
+                        oldkey = key;
+                    } else {
+                        oldcount = item.getCount();
+                        oldprice = item.getPrice();
+                        oldkey = item.getKey();
+                    }
+                    cust.reserve(key, location, price);
+                    Transaction t = this.transactionManager.getTransaction(id);
+                    if (t != null) {
+                        synchronized (t) {
+                            t.addOperation(new Operation(cust.getKey(), cust, oldkey, oldcount, oldprice));
+                        }
+                    } else {
+                        Trace.error("Transaction doesn't exist.");
+                    }
+                }
+            } else {
+                Trace.error("Customer doesn't exist.");
+            }
         }
     }
 
@@ -412,7 +478,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryFlightPrice(id, flightNumber);
-        setCustomerReservation(id, customerId, Flight.getKey(flightNumber), String.valueOf(flightNumber), price);
+        setCustomerReservation(id, customerId, Flight.getKey(flightNumber), String.valueOf(flightNumber), price); //method gets the lock
 
         return true;
     }
@@ -437,7 +503,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryCarsPrice(id, location);
-        setCustomerReservation(id, customerId, Car.getKey(location), location, price);
+        setCustomerReservation(id, customerId, Car.getKey(location), location, price); //method gets the lock
 
         return true;
     }
@@ -462,7 +528,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         int price = queryRoomsPrice(id, location);
-        setCustomerReservation(id, customerId, Room.getKey(location), location, price);
+        setCustomerReservation(id, customerId, Room.getKey(location), location, price); //method gets the lock
 
         return true;
     }
@@ -472,22 +538,60 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Assuming everything has to work for reserve itinerary to return true
         boolean result = false;
 
+        // First get locks for every object
+        for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();)
+        {
+            if (!getLock(id, "flight-"+e.nextElement(), LockManager.WRITE)) {
+                this.abort(id);
+                return false;
+            } else {
+                this.transactionManager.enlist(id, FLIGHT_PROXY_INDEX);
+            }
+        }
+
+        if (car) {
+            if (!getLock(id, "car-" + location, LockManager.WRITE)) {
+                this.abort(id);
+                return false;
+            } else {
+                this.transactionManager.enlist(id, CAR_PROXY_INDEX);
+            }
+        }
+
+        if (room) {
+            if (!getLock(id, "room-"+location, LockManager.WRITE)) {
+                this.abort(id);
+                return false;
+            } else {
+                this.transactionManager.enlist(id, ROOM_PROXY_INDEX);
+            }
+        }
+
+        // Then reserve each object
         for (Enumeration<String> e = flightNumbers.elements(); e.hasMoreElements();)
         {
             result = reserveFlight(id, customerId, Integer.parseInt(e.nextElement()));
+            if (!result) {
+                this.abort(id);
+            }
         }
 
         if (car) {
             result = reserveCar(id, customerId, location);
+            if (!result) {
+                this.abort(id);
+            }
         }
 
         if (room) {
             result = reserveRoom(id, customerId, location);
+            if (!result) {
+                this.abort(id);
+            }
         }
 
-        return result;
+        return true;
     }
-
 }
 
 

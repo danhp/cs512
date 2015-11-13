@@ -35,9 +35,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             int type = 0; // operation is overwrite
             if (oldValue == null)
                 type = 2; // operation is add
-            Transaction t = this.transactions.get(id);
-            if (t!=null)
-                t.addOperation(new Operation(key, oldValue, type));
+            Transaction t;
+            synchronized (this.transactions) {
+                t = this.transactions.get(id);
+            }
+            if (t != null) {
+                synchronized (t) {
+                    t.addOperation(new Operation(key, oldValue, type));
+                }
+            }
 
             m_itemHT.put(key, newValue);
         }
@@ -47,9 +53,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Invalid transaction id --> operation not saved.
     protected RMItem removeData(int id, String key, RMItem oldValue) {
         synchronized(m_itemHT) {
-            Transaction t = this.transactions.get(id);
-            if (t != null)
-                this.transactions.get(id).addOperation(new Operation(key, oldValue, 1));
+            Transaction t;
+            synchronized (this.transactions) {
+                t = this.transactions.get(id);
+            }
+            if (t != null) {
+                synchronized (t) {
+                    t.addOperation(new Operation(key, oldValue, 1));
+                }
+            }
 
             return (RMItem) m_itemHT.remove(key);
         }
@@ -102,6 +114,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             removeData(-1, operation.getKey(), null);
         else if (operation.isOvewrite() || operation.isDelete())
             writeData(-1, operation.getKey(), null, operation.getItem());
+        else if (operation.isReserve()) {
+            ReservableItem item = (ReservableItem) readData(id, operation.getKey());
+            if (item != null) {
+                // Decrease the number of available items in the storage.
+                synchronized (item) {
+                    item.setCount(operation.getOldCount());
+                    item.setReserved(operation.getOldReserved());
+                }
+            }
+        }
     }
 
     // Basic operations on ReservableItem //
@@ -178,8 +200,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             return false;
         } else {
             // Decrease the number of available items in the storage.
-            item.setCount(item.getCount() - 1);
-            item.setReserved(item.getReserved() + 1);
+            synchronized (item) {
+                item.setCount(item.getCount() - 1);
+                item.setReserved(item.getReserved() + 1);
+            }
+
+            Transaction t;
+            synchronized (this.transactions) {
+                t = this.transactions.get(id);
+            }
+            if (t!=null) {
+                synchronized (t) {
+                    t.addOperation(new Operation(item.getKey(), item, item.getCount(), item.getReserved()));
+                }
+            }
 
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + key + ", " + location + ") OK.");
