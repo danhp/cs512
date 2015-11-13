@@ -426,4 +426,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public boolean reserveRoom(int id, int customerId, String location) {
         return reserveItem(id, customerId, Room.getKey(location), location);
     }
+
+    // Assumes this being called when no transaction associated with it.
+    @Override
+    public boolean shutdown() {
+        System.exit(0);
+        return true;
+    }
 }

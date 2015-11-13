@@ -467,7 +467,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         }
 
         // Try to get a write lock on flight object
-        if (!getLock(id, "flight-"+Integer.toString(flightNumber), LockManager.WRITE)) return false;
+        if (!getLock(id, "flight-" + Integer.toString(flightNumber), LockManager.WRITE)) return false;
 
         boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
 
@@ -592,6 +592,35 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
         return true;
     }
-}
 
+    @Override
+    public boolean shutdown() {
+        // Check that no transaction are running.
+        if (transactionManager.isActive()) return false;
+
+        // Shutdown all the RMs
+        try {
+            this.getFlightProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
+        try {
+            this.getCarProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
+        try {
+            this.getRoomProxy().shutdown();
+        } catch (Exception e) {
+            // Do nothing as normal
+        }
+
+        // Shutdown the middleware
+        System.exit(0);
+
+        return true;
+    }
+
+
+}
 
