@@ -38,9 +38,16 @@ public class TransactionManager {
 
     public int start() {
         //Create id
-        int id = transactions.size();
-        this.transactions.add(new Transaction(id));
-        this.activeTransactions.put(id, new ArrayList<Integer>());
+        int id;
+        synchronized (transactions) {
+            id = transactions.size();
+            this.transactions.add(new Transaction(id));
+        }
+
+        synchronized (activeTransactions) {
+            this.activeTransactions.put(id, new ArrayList<Integer>());
+        }
+
         return id;
     }
 
@@ -51,12 +58,14 @@ public class TransactionManager {
         }
 
         //commit to rms
-        for (Integer rm : activeTransactions.get(id)) {
-            commitToRM(id, rm);
-        }
+        synchronized (activeTransactions) {
+            for (Integer rm : activeTransactions.get(id)) {
+                commitToRM(id, rm);
+            }
 
-        //remove from active
-        this.activeTransactions.remove(id);
+            //remove from active
+            this.activeTransactions.remove(id);
+        }
         return true;
     }
 
@@ -68,17 +77,23 @@ public class TransactionManager {
 
         //undo the operations on customer
         Transaction transaction = this.transactions.get(id);
-        for (Operation op : transaction.history()) {
-            middleware.undo(transaction.getId(), op);
+        synchronized (transaction) {
+            for (Operation op : transaction.history()) {
+                middleware.undo(transaction.getId(), op);
+            }
         }
 
         //abort to RMs
-        for (Integer rm : activeTransactions.get(id)) {
-            abortToRM(id, rm);
+        synchronized (activeTransactions) {
+            for (Integer rm : activeTransactions.get(id)) {
+                abortToRM(id, rm);
+            }
         }
-
+        
         //remove from active
-        this.activeTransactions.remove(id);
+        synchronized (activeTransactions) {
+            this.activeTransactions.remove(id);
+        }
 
         return true;
     }
