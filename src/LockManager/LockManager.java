@@ -230,15 +230,6 @@ public class LockManager
                         throw new RedundantLockRequestException(dataObj.getXId(), "Redundant WRITE lock request");
                     }
                     else if (dataObj2.getLockType() == DataObj.READ) {
-                        for (Object obj : vect) {
-                            if (((DataObj)obj).getXId() != dataObj.getXId()) {
-                                System.out.println("Object " + dataObj.getDataName() + "with Transaction "
-                                        + dataObj.getXId() + " has requested WRITE lock, and currently has read lock " +
-                                        "This cannot be granted as another transaction has a WRITE lock");
-                                return true;
-                            }
-                        }
-
                         bitset.set(0, true);
                         Trace.info("Want WRITE, already have READ; CONVERT");
                     }

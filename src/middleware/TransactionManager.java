@@ -52,46 +52,47 @@ public class TransactionManager {
     }
 
     public boolean commit(int id) {
-        if (!transactionExists(id)) {
-            Trace.error("Can't abort transaction - doesn't exist");
-            return false;
-        }
-
-        //commit to rms
         synchronized (activeTransactions) {
-            for (Integer rm : activeTransactions.get(id)) {
-                commitToRM(id, rm);
+            if (!transactionExists(id)) {
+                Trace.error("Can't abort transaction - doesn't exist");
+                return false;
             }
 
-            //remove from active
-            this.activeTransactions.remove(id);
+            //commit to rms
+            synchronized (activeTransactions) {
+                for (Integer rm : activeTransactions.get(id)) {
+                    commitToRM(id, rm);
+                }
+
+                //remove from active
+                this.activeTransactions.remove(id);
+            }
         }
+
         return true;
     }
 
     public boolean abort(int id) {
-        if (!transactionExists(id)) {
-            Trace.error("Can't abort transaction - doesn't exit");
-            return false;
-        }
-
-        //undo the operations on customer
-        Transaction transaction = this.transactions.get(id);
-        synchronized (transaction) {
-            for (Operation op : transaction.history()) {
-                middleware.undo(transaction.getId(), op);
-            }
-        }
-
-        //abort to RMs
         synchronized (activeTransactions) {
+            if (!transactionExists(id)) {
+                Trace.error("Can't abort transaction - doesn't exit");
+                return false;
+            }
+
+            //undo the operations on customer
+            Transaction transaction = this.transactions.get(id);
+            synchronized (transaction) {
+                for (Operation op : transaction.history()) {
+                    middleware.undo(transaction.getId(), op);
+                }
+            }
+
+            //abort to RMs
             for (Integer rm : activeTransactions.get(id)) {
                 abortToRM(id, rm);
             }
-        }
-        
-        //remove from active
-        synchronized (activeTransactions) {
+
+            //remove from active
             this.activeTransactions.remove(id);
         }
 
