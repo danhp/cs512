@@ -6,13 +6,17 @@ import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.concurrent.ConcurrentHashMap;
 
 /**
  * Created by justindomingue on 2015-11-10.
  */
 public class TransactionManager {
 
-    private Map<Integer, List<Integer>> activeTransactions = new HashMap<Integer, List<Integer>>();
+    // 30sec timeout
+    private static final long TRANSACTION_TIMEOUT = 30000;
+
+    private Map<Integer, List<Integer>> activeTransactions = new ConcurrentHashMap<>();
     private List<Transaction> transactions;
 
     private MiddleWareImpl middleware;
@@ -24,6 +28,17 @@ public class TransactionManager {
     private static int FLIGHT_PROXY_INDEX = 1;
     private static int ROOM_PROXY_INDEX = 2;
 
+    private Map<Integer, ExpireTime> expireTimeMap = new ConcurrentHashMap<>();
+    class ExpireTime {
+        private long expireTime;
+
+        public ExpireTime(long time) {
+            this.expireTime = time;
+        }
+        public void setExpireTime(long newTime) {this.expireTime = newTime;}
+        public long getExpireTime() {return this.expireTime;}
+    }
+
     public TransactionManager(MiddleWareImpl middleware,
                                   middleware.ResourceManager carProxy,
                                   middleware.ResourceManager flightProxy,
@@ -34,6 +49,23 @@ public class TransactionManager {
         this.roomProxy = roomProxy;
 
         transactions = new ArrayList<Transaction>();
+
+        // Periodic cleanup.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(3*TRANSACTION_TIMEOUT);
+                        cleanup();
+                    } catch (InterruptedException e) {
+                        System.out.println("EXCEPTION: ");
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     public int start() {
@@ -130,6 +162,9 @@ public class TransactionManager {
     }
 
     public void enlist(int id, int rmIndex) {
+        // Reset the time upon receiving a new operation
+        this.resetTimer(id);
+
         //add operation to transaction with Id
         List<Integer> proxies = activeTransactions.get(id);
         synchronized (proxies) {
@@ -154,5 +189,23 @@ public class TransactionManager {
 
     public boolean transactionExists(int id) {
         return activeTransactions.containsKey(id);
+    }
+
+    public void resetTimer(int transactionID) {
+        synchronized (this.expireTimeMap) {
+            long newExpireTime = System.currentTimeMillis() + TRANSACTION_TIMEOUT;
+            this.expireTimeMap.get(transactionID).setExpireTime(newExpireTime);
+        }
+    }
+
+    private void cleanup() {
+        synchronized (this.expireTimeMap) {
+            for (Map.Entry<Integer, ExpireTime> entry : this.expireTimeMap.entrySet()) {
+                if (entry.getValue().getExpireTime() < System.currentTimeMillis()) {
+                    System.out.println("Transaction " + entry.getKey() + " expired.");
+                    this.abort(entry.getKey());
+                }
+            }
+        }
     }
 }
