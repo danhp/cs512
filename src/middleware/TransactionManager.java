@@ -131,16 +131,20 @@ public class TransactionManager {
     public void enlist(int id, int rmIndex) {
         //add operation to transaction with Id
         List<Integer> proxies = activeTransactions.get(id);
-        if (!proxies.contains(rmIndex)) {
-            proxies.add(rmIndex);
-            startToRM(id, rmIndex);
+        synchronized (proxies) {
+            if (!proxies.contains(rmIndex)) {
+                proxies.add(rmIndex);
+                startToRM(id, rmIndex);
+            }
         }
     }
 
     public Transaction getTransaction(int id) {
-        for (Transaction t : transactions) {
-            if (t.getId() == id) {
-                return t;
+        synchronized (transactions) {
+            for (Transaction t : transactions) {
+                if (t.getId() == id) {
+                    return t;
+                }
             }
         }
 
