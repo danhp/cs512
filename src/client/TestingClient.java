@@ -84,6 +84,7 @@ public class TestingClient extends WSClient {
         int transactiontested = 2;  // test t1 or t2
         int numIter = 1000;             // loosely, program will run for how long
         int sleepfactor = 1;        // 0 to not sleep between loops
+        long sleep = 10000;
 
         System.out.println("Press Enter to start");
         try { System.in.read(); } catch (IOException e) { e.printStackTrace(); }
@@ -92,13 +93,12 @@ public class TestingClient extends WSClient {
             System.out.println("Iteration " + j);
 
             try {
-                System.out.println("Sleeping...");
-                int maxr = 100;
-                int min = 10;
-                int range = (maxr-min)+1;
-                long random = (long)Math.random() * range - min;
-                random = random - maxr/2;
-                Thread.sleep((long)(random * (10000-timeForLastTransaction) * sleepfactor));
+                int x = 2000;
+                Random ran = new Random();
+                long random = ran.nextInt(x);
+                long sleeptime = sleep + (random-x/2) - timeForLastTransaction;
+                System.out.println("Sleeping for " + sleeptime + "ns");
+                Thread.sleep(sleeptime);
             } catch(InterruptedException ex) {
                 Thread.currentThread().interrupt();
             }
@@ -113,7 +113,7 @@ public class TestingClient extends WSClient {
             // Add an abort operation
             transaction.add(new ArrayList<Object>() {{ add(25); add(xid); }});
 
-            long startOfTransaction = System.nanoTime();
+            long startOfTransaction = System.currentTimeMillis();
 
             for (List<Object> operation : transaction) {
                 // Get an operation
@@ -656,7 +656,7 @@ public class TestingClient extends WSClient {
                 }
             }
 
-            timeForLastTransaction= System.nanoTime() - startOfTransaction;
+            timeForLastTransaction= System.currentTimeMillis() - startOfTransaction;
             totalTime += timeForLastTransaction;
         }
 
