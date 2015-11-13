@@ -76,9 +76,9 @@ public class TestingClient extends WSClient {
 
         // experiment variables
         int transactiontested = 2;  // test t1 or t2
-        int numIter = 50;             // loosely, program will run for how long
+        int numIter = 100;             // loosely, program will run for how long
         int sleepfactor = 1;        // 0 to not sleep between loops
-        long sleep = 10000;
+        long sleep = 1250;
 
         System.out.println("Press Enter to start");
         try { System.in.read(); } catch (IOException e) { e.printStackTrace(); }
@@ -87,10 +87,10 @@ public class TestingClient extends WSClient {
             System.out.println("Iteration " + j);
 
             try {
-                int x = 2000;
+                int x = 100;
                 Random ran = new Random();
                 long random = ran.nextInt(x);
-                long sleeptime = sleep + (random-x/2) - timeForLastTransaction;
+                long sleeptime = sleep + (random-x/2);
                 System.out.println("Sleeping for " + sleeptime + "ns");
                 Thread.sleep(sleeptime);
             } catch(InterruptedException ex) {
@@ -655,8 +655,8 @@ public class TestingClient extends WSClient {
         }
 
 
-        System.out.println("Time elapsed: " + totalTime + "ns");
-        System.out.println("Average per transaction: " + totalTime/numIter + "ns/tps");
+        System.out.println("Time elapsed: " + totalTime + "ms");
+        System.out.println("Average per transaction: " + totalTime/numIter + "ms/tps");
     }
 
     public Vector parse(String command) {
