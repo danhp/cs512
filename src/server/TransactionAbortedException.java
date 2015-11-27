@@ -1,4 +1,4 @@
-package server.ws;
+package server;
 
 /**
  * Created by justindomingue on 15-11-27.

@@ -16,6 +16,9 @@
 
 package server.ws;
 
+import server.InvalidTransactionException;
+import server.TransactionAbortedException;
+
 import javax.jws.WebService;
 import javax.jws.WebMethod;
 
@@ -35,6 +38,9 @@ public interface ResourceManager {
 
     @WebMethod
     public void prepare(int id) throws TransactionAbortedException, InvalidTransactionException;
+
+    @WebMethod
+    public boolean haveYouCommitted(int id);
 
     @WebMethod
     public void selfDestruct();

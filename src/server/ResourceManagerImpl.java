@@ -5,9 +5,6 @@
 
 package server;
 
-import server.ws.InvalidTransactionException;
-import server.ws.TransactionAbortedException;
-
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
@@ -90,7 +87,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public void doCommit(int transactionID) {
         synchronized (writeSet) {
-            if (!writeSet.containsKey(transactionID)) return;
+            if (!writeSet.containsKey(transactionID)) {
+                Trace.warn("Transaction " + transactionID + " does not exist. Ignoring.");
+            }
 
             for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
                 if (entry.getValue() == null) {
@@ -138,6 +137,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
         }
         // Went through all the entries and they match.
+    }
+
+    @Override
+    public boolean haveYouCommitted(int id) {
+        boolean commitStatus = !readSet.containsKey(id);
+        System.out.println("Returning commit status: " + commitStatus);
+        return commitStatus;
     }
 
     @Override

@@ -3,18 +3,17 @@ package middleware;
 import LockManager.LockManager;
 import LockManager.DeadlockException;
 import server.Trace;
-import server.ws.InvalidTransactionException;
-import server.ws.TransactionAbortedException;
-import sun.util.resources.cldr.ar.CalendarData_ar_LB;
 
-import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
+import java.util.Scanner;
 
 public class TransactionManager {
 
     // 1 min timeout
     private static long TRANSACTION_TIMEOUT = 60000;
+    private static long VOTE_REQUEST_TIMEOUT = 10;  //10 seconds
+    private static long COMMITTED_REQUEST_TIMEOUT = 10;  //10 seconds
 
     private MiddleWareImpl mw;
 
@@ -77,6 +76,16 @@ public class TransactionManager {
         return id;
     }
 
+    private void shouldCrash(int id, String which, String msg) {
+        Scanner scanIn = new Scanner(System.in);
+
+        Trace.warn("Transaction " + id + ": " + msg + " - should I crash? (j/k)");
+        char c = scanIn.next().charAt(0);
+
+        if (c == 'j')
+            mw.crash(which);
+    }
+
     public boolean commit(int id) {
         if (!this.activeTransactions.containsKey(id)) return false;
 
@@ -98,50 +107,92 @@ public class TransactionManager {
                     return false;
                 }
 
-                class Task implements Callable<String> {
+                shouldCrash(id, "mw", "about to send vote requests");
+
+                class PrepareYourself implements Callable<String> {
                     private String rm;
-                    public Task(String rm) {
+                    public PrepareYourself(String rm) {
                         this.rm = rm;
                     }
 
                     @Override
-                    public String call() throws TransactionAbortedException, InvalidTransactionException {
+                    public String call() throws Exception {
                         mw.prepare(id, this.rm);
                         return this.rm + " prepared!";
                     }
                 }
 
+                class HaveYouCommitted implements Callable<String> {
+                    private String rm;
+                    private boolean decision;
+                    public HaveYouCommitted(String rm, boolean decision) {
+                        this.rm = rm;
+                        this.decision = decision;
+                    }
+
+                    @Override
+                    public String call() throws Exception {
+                        try {
+                            mw.haveYouCommitted(id, this.rm);
+                        } catch (Exception e) {
+                            Trace.error("Transaction " + id + ": RM " + this.rm + " probably died in an uncertain state. Waiting 10s econds and then sending the decision again.");
+                            Thread.sleep(COMMITTED_REQUEST_TIMEOUT);
+
+                            Trace.info("Transaction " + id + ": sending decision to RM " + this.rm);
+                            if (this.decision) {
+                                mw.getProxy(this.rm).doCommit(id);
+                            } else {
+                                mw.getProxy(this.rm).doAbort(id);
+                            }
+                            Thread.sleep(COMMITTED_REQUEST_TIMEOUT);
+
+                            Trace.info("Transaction " + id + ": asking RM " + this.rm + " if it has committed");
+                            mw.haveYouCommitted(id, this.rm);
+                        }
+                        return this.rm + " has committed!";
+                    }
+                }
+
+
                 // Phase 1.
                 // Check if we can still commit
                 ExecutorService executor = Executors.newSingleThreadExecutor();
-                Future<String> future1 = executor.submit(new Task("flight"));
-                Future<String> future2 = executor.submit(new Task("room"));
-                Future<String> future3 = executor.submit(new Task("car"));
-                Future<String> future4 = executor.submit(new Task("customer"));
+                Future<String> future1 = executor.submit(new PrepareYourself("flight"));
+                Future<String> future2 = executor.submit(new PrepareYourself("room"));
+                Future<String> future3 = executor.submit(new PrepareYourself("car"));
+
+                shouldCrash(id, "mw", "about to receive vote requests");
 
                 boolean abort = false;
                 try {
-                    future1.get(3, TimeUnit.SECONDS);
-                    future2.get(3, TimeUnit.SECONDS);
-                    future3.get(3, TimeUnit.SECONDS);
-                    future4.get(3, TimeUnit.SECONDS);
+                    future1.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    future2.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+
+                    shouldCrash(id, "mw", "about to receive last vote request (have received some but not all)");
+
+                    future3.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
                 } catch(TimeoutException e) {
-                    Trace.error("Thread timed out while reuqesting vote: " + e);
+                    Trace.error("Transaction " + id + " : thread timed out while requesting vote: " + e);
                     e.printStackTrace();
                     abort = true;
                 } catch (InterruptedException e) { e.printStackTrace(); }
                   catch (ExecutionException e) {
-                      Trace.error("One of the RMs has aborted. Aborting all.");
+                      Trace.error("Transaction " + id + " : One of the RMs has aborted. Aborting all.");
                       Trace.error(e.getCause().toString());
+                      e.printStackTrace();
                       abort = true;
                   }
 
                 executor.shutdown();
 
+                shouldCrash(id, "mw", "about to send decision (decision is commit=" + !abort + ")");
+
                 if (abort) {
                     this.abort(id);
                     return false;
                 }
+
+                Trace.info("Every RM is prepared for commit. Commiting to all.");
 
                 // Phase 2.
                 // Execute all the operations
@@ -150,7 +201,31 @@ public class TransactionManager {
                 mw.getRoomProxy().doCommit(id);
                 mw.commitCustomer(id);
 
+                shouldCrash(id, "mw", "after having sent all decisions");
+
+                // Collecting decisions
+                executor = Executors.newSingleThreadExecutor();
+                future1 = executor.submit(new HaveYouCommitted("flight", !abort));
+                future2 = executor.submit(new HaveYouCommitted("room", !abort));
+                future3 = executor.submit(new HaveYouCommitted("car", !abort));
+
+                try {
+                    future1.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    future3.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                } catch(TimeoutException e) {
+                    Trace.error("Transaction " + id + " : thread timed out while requesting vote: " + e);
+                    e.printStackTrace();
+                } catch (InterruptedException e) { e.printStackTrace(); }
+                catch (ExecutionException e) {
+                    Trace.error("Transaction " + id + " : One of the RMs has aborted. Aborting all.");
+                    Trace.error(e.getCause().toString());
+                    e.printStackTrace();
+                }
+
+                executor.shutdown();
                 // Unlock everything
+                Trace.info("Unlocking every acquired locks for transaction " + id);
                 this.lockManager.UnlockAll(id);
 
                 this.activeTransactions.remove(id);

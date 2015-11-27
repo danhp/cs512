@@ -1,5 +1,6 @@
 package client;
 
+import java.net.ConnectException;
 import java.util.*;
 import java.io.*;
 

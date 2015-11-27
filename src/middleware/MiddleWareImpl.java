@@ -1,10 +1,6 @@
 package middleware;
 
-import LockManager.LockManager;
-import LockManager.DeadlockException;
 import server.*;
-import server.ws.InvalidTransactionException;
-import server.ws.TransactionAbortedException;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
@@ -25,8 +21,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private TransactionManager tm = new TransactionManager(this);
 
     public MiddleWareImpl() {
-        String hosts[] = {"142.157.169.58","142.157.169.58","142.157.165.27" };
-//        String hosts[] = {"localhost","localhost","localhost" };
+//        String hosts[] = {"142.157.169.58","142.157.169.58","142.157.165.27" };
+        String hosts[] = {"localhost","localhost","localhost" };
         int[] ports = {4000,4001,4002};
 
         setupProxies(hosts, ports);
@@ -65,18 +61,18 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     public middleware.ResourceManager getProxy(String which) {
         if (which.equalsIgnoreCase("flight")) {
-            return getFlightProxy().selfDestruct();
+            return getFlightProxy();
         } else if (which.equalsIgnoreCase("car")) {
-            return getCarProxy().selfDestruct();
+            return getCarProxy();
         } else if (which.equalsIgnoreCase("room")) {
-            return getRoomProxy().selfDestruct();
-        } else {
-            return null;
+            return getRoomProxy();
         }
+
+        return null;
     }
 
     public void crash(String which) {
-        if (which.equalsIgnoreCase("tm")) {
+        if (which.equalsIgnoreCase("mw")) {
             System.out.println("TM> Initiating self destruct");
             System.exit(-1);
         }
@@ -85,8 +81,14 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     }
 
-    public void prepare(int id, String rm)  throws TransactionAbortedException, InvalidTransactionException {
+    public void prepare(int id, String rm)  throws Exception {
+        Trace.info("Transaction " + id + " : Calling prepare (vote request) on " + rm + " for " + id);
         getProxy(rm).prepare(id);
+    }
+
+    public void haveYouCommitted(int id, String rm) throws Exception {
+        Trace.info("Transaction " + id + " : asking RM " + this.rm + " for commit status.");
+        getProxy(rm).haveYouCommitted(id);
     }
 
     // CUSTOMER
