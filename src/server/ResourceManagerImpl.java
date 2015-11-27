@@ -13,10 +13,15 @@ import java.util.Map;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
+    private ReplicaManager[] replicas;
 
     private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
+
+    public ResourceManagerImpl() {
+        replicas = new ReplicaManager[3];   // one for each type
+    }
 
     // Basic operations on RMItem //
 
@@ -383,4 +388,5 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public boolean reserveRoom(int id, int customerId, String location) {
         return reserveItem(id, customerId, Room.getKey(location), location);
     }
+
 }
