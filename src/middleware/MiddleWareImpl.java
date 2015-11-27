@@ -3,6 +3,8 @@ package middleware;
 import LockManager.LockManager;
 import LockManager.DeadlockException;
 import server.*;
+import server.ws.InvalidTransactionException;
+import server.ws.TransactionAbortedException;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
@@ -60,6 +62,32 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     protected middleware.ResourceManager getCarProxy() { return proxy[MiddleWareImpl.CAR_PROXY_INDEX]; }
     protected middleware.ResourceManager getFlightProxy() { return proxy[MiddleWareImpl.FLIGHT_PROXY_INDEX]; }
     protected middleware.ResourceManager getRoomProxy() { return proxy[MiddleWareImpl.ROOM_PROXY_INDEX]; }
+
+    public middleware.ResourceManager getProxy(String which) {
+        if (which.equalsIgnoreCase("flight")) {
+            return getFlightProxy().selfDestruct();
+        } else if (which.equalsIgnoreCase("car")) {
+            return getCarProxy().selfDestruct();
+        } else if (which.equalsIgnoreCase("room")) {
+            return getRoomProxy().selfDestruct();
+        } else {
+            return null;
+        }
+    }
+
+    public void crash(String which) {
+        if (which.equalsIgnoreCase("tm")) {
+            System.out.println("TM> Initiating self destruct");
+            System.exit(-1);
+        }
+
+        getProxy(which).selfDestruct();
+
+    }
+
+    public void prepare(int id, String rm)  throws TransactionAbortedException, InvalidTransactionException {
+        getProxy(rm).prepare(id);
+    }
 
     // CUSTOMER
 

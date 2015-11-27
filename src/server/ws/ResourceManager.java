@@ -34,7 +34,10 @@ public interface ResourceManager {
     public void doAbort(int id);
 
     @WebMethod
-    public boolean prepare(int id);
+    public void prepare(int id) throws TransactionAbortedException, InvalidTransactionException;
+
+    @WebMethod
+    public void selfDestruct();
 
     // Flight operations //
     

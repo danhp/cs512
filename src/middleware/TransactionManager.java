@@ -2,10 +2,14 @@ package middleware;
 
 import LockManager.LockManager;
 import LockManager.DeadlockException;
+import server.Trace;
+import server.ws.InvalidTransactionException;
+import server.ws.TransactionAbortedException;
+import sun.util.resources.cldr.ar.CalendarData_ar_LB;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.*;
 
 public class TransactionManager {
 
@@ -94,12 +98,47 @@ public class TransactionManager {
                     return false;
                 }
 
+                class Task implements Callable<String> {
+                    private String rm;
+                    public Task(String rm) {
+                        this.rm = rm;
+                    }
+
+                    @Override
+                    public String call() throws TransactionAbortedException, InvalidTransactionException {
+                        mw.prepare(id, this.rm);
+                        return this.rm + " prepared!";
+                    }
+                }
+
                 // Phase 1.
                 // Check if we can still commit
-                if (!mw.getCarProxy().prepare(id) ||
-                        !mw.getFlightProxy().prepare(id) ||
-                        !mw.getRoomProxy().prepare(id)) {
-                    System.out.println("Transaction was aborted as current values don't match the readSet");
+                ExecutorService executor = Executors.newSingleThreadExecutor();
+                Future<String> future1 = executor.submit(new Task("flight"));
+                Future<String> future2 = executor.submit(new Task("room"));
+                Future<String> future3 = executor.submit(new Task("car"));
+                Future<String> future4 = executor.submit(new Task("customer"));
+
+                boolean abort = false;
+                try {
+                    future1.get(3, TimeUnit.SECONDS);
+                    future2.get(3, TimeUnit.SECONDS);
+                    future3.get(3, TimeUnit.SECONDS);
+                    future4.get(3, TimeUnit.SECONDS);
+                } catch(TimeoutException e) {
+                    Trace.error("Thread timed out while reuqesting vote: " + e);
+                    e.printStackTrace();
+                    abort = true;
+                } catch (InterruptedException e) { e.printStackTrace(); }
+                  catch (ExecutionException e) {
+                      Trace.error("One of the RMs has aborted. Aborting all.");
+                      Trace.error(e.getCause().toString());
+                      abort = true;
+                  }
+
+                executor.shutdown();
+
+                if (abort) {
                     this.abort(id);
                     return false;
                 }

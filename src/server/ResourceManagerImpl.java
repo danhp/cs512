@@ -5,6 +5,9 @@
 
 package server;
 
+import server.ws.InvalidTransactionException;
+import server.ws.TransactionAbortedException;
+
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
@@ -116,22 +119,31 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public boolean prepare(int transactionID) {
+    public void prepare(int transactionID) throws TransactionAbortedException, InvalidTransactionException {
+        System.out.println("Preparing for transaction " + transactionID);
         synchronized (this.readSet) {
+            if (!this.readSet.containsKey(transactionID)) { throw new InvalidTransactionException(); }
+
             for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
 
                 synchronized (m_itemHT) {
                     RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
 
                     if (inDatabase != null){
-                        if (inDatabase.equals(entry.getValue())) return false;
+                        if (inDatabase.equals(entry.getValue()))
+                            throw new InvalidTransactionException();
                     }
                 }
 
             }
         }
         // Went through all the entries and they match.
-        return true;
+    }
+
+    @Override
+    public void selfDestruct() {
+        System.out.println("Initiating self destruct sequence...\n");
+        System.exit(-1);
     }
 
     // Basic operations on ReservableItem //
