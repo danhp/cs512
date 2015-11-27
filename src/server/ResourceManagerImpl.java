@@ -13,14 +13,17 @@ import java.util.Map;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
-    private ReplicaManager[] replicas;
+    private ReplicaManager[] all_replicas;
 
     private Map<Integer, Transaction> transactions = new HashMap<Integer, Transaction>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
     public ResourceManagerImpl() {
-        replicas = new ReplicaManager[3];   // one for each type
+        all_replicas = new ReplicaManager[3];   // one for each type
+
+        ReplicaManager flightReplicaManager = new ReplicaManager("flight_replicas");
+        all_replicas[0] = flightReplicaManager;
     }
 
     // Basic operations on RMItem //

@@ -12,17 +12,34 @@ import java.util.List;
 
 class ReplicaManager {
     private Replica primary;
+    private Replica local;
     private List<Replica> replicas = new ArrayList<Replica>();
+
+    public ReplicaManager(String cluster) {
+        local = new Replica(cluster);
+        try {
+            local.start();
+        } catch (Exception e) {
+            Trace.error(e.toString());
+            e.printStackTrace();
+        }
+    }
 
     class Replica extends ReceiverAdapter {
         private JChannel channel;
-        private String user_name = System.getProperty("user.name", "n/a");
+        private String user_name = Integer.toString((int)(Math.random() * 500));
+        private String cluster;
 
-        // JGROUPS
+        public Replica(String cluster) {
+            this.cluster = cluster;
+        }
+
         private void start() throws Exception {
+            System.out.println("Starting replica " + user_name);
+
             channel = new JChannel();   // use defualt config
             channel.setReceiver(this);
-            channel.connect("FlightReplicas");
+            channel.connect(this.cluster);
             eventLoop();
             channel.close();
         }
@@ -53,9 +70,5 @@ class ReplicaManager {
         public void receive(Message msg) {
             System.out.println(msg.getSrc() + ": " + msg.getObject());
         }
-    }
-
-    public ReplicaManager() {
-
     }
 }

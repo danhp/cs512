@@ -89,6 +89,7 @@
             <arg value="${server.name}"/>
             <arg value="${server.port}"/>
             <arg value="${basedir}/webapps"/>
+            <jvmarg value="-Djava.net.preferIPv4Stack=true"/>
         </java>
     </target>
 
