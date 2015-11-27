@@ -69,6 +69,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
 
     // TRANSACTIONS
+
+    //When a participant receives a canCommit? request it replies with its vote (Yes or
+    //No) to the coordinator. Before voting Yes, it prepares to commit by saving objects
+    //in permanent storage. If the vote is No, the participant aborts immediately
+    @Override
+    public boolean prepare(int id) {
+        boolean can_commit = false;
+
+        // save objects to permanent storage
+        //TODO modify can_commit accordingly
+
+        return can_commit;
+    }
+
     @Override
     public void start(int id) {
         System.out.println("Starting transaction " + id);
@@ -77,8 +91,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
     }
 
+
+    // Participants that voted Yes are waiting for a doCommit or doAbort request from
+    // the coordinator. When a participant receives one of these messages it acts
+    // accordingly and, in the case of commit, makes a haveCommitted call as
+    // confirmation to the coordinator.
     @Override
-    public void commit(int id) {
+    public void doCommit(int id) {
         Trace.info("Committing transaction " + id);
         //nothing to do but to remove the transactions
         synchronized (transactions) {
@@ -87,7 +106,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public void abort(int id) {
+    public void doAbort(int id) {
         Trace.info("Aborting transaction " + id);
         //undo the operations
         Transaction transaction = this.transactions.get(id);

@@ -25,13 +25,16 @@ public interface ResourceManager {
 
     // Transaction operations //
     @WebMethod
+    public boolean prepare(int id);
+
+    @WebMethod
     public void start(int id);
 
     @WebMethod
-    public void commit(int id);
+    public void doCommit(int id);
 
     @WebMethod
-    public void abort(int id);
+    public void doAbort(int id);
 
     // Flight operations //
     

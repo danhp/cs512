@@ -94,10 +94,29 @@ public class TransactionManager {
                 return false;
             }
 
-            //commit to rms
             synchronized (activeTransactions) {
+
+                //1. Phase 1
+                boolean all_can_commit = true;
                 for (Integer rm : activeTransactions.get(id)) {
-                    commitToRM(id, rm);
+                    boolean rm_can_commit = prepareToRM(id, rm);
+                    all_can_commit = all_can_commit && rm_can_commit;
+                }
+
+                //2. Phase 2
+
+                // (a) no failures, all yes
+                if (all_can_commit) {
+                    for (Integer rm : activeTransactions.get(id)) {
+                        commitToRM(id, rm);
+                    }
+                }
+
+                // (b) at least one failure or no
+                else {
+                    for (Integer rm : activeTransactions.get(id)) {
+                        abortToRM(id, rm);
+                    }
                 }
 
                 //remove from active
@@ -135,34 +154,35 @@ public class TransactionManager {
         return true;
     }
 
-    private void commitToRM(int id, int rmIndex) {
+    private boolean canCommit(int id, int rmInedx) {
+
+    }
+
+    private middleware.ResourceManage getProxy(int rmIndex) {
         if (rmIndex == CAR_PROXY_INDEX) {
-            carProxy.commit(id);
+            return carProxy;
         } else if (rmIndex == FLIGHT_PROXY_INDEX) {
-            flightProxy.commit(id);
-        } else {
-            roomProxy.commit(id);
+            return flightProxy;
+        } else if (rmIndex == ROOM_PROXY_INDEX) {
+            return roomProxy;
         }
+    }
+
+
+    private boolean prepareToRM(int id, int rmIndex) {
+        return getProxy(rmIndex).prepare(id);
+    }
+
+    private void commitToRM(int id, int rmIndex) {
+        getProxy(rmIndex).doCommit(id);
     }
 
     private void abortToRM(int id, int rmIndex) {
-        if (rmIndex == CAR_PROXY_INDEX) {
-            carProxy.abort(id);
-        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
-            flightProxy.abort(id);
-        } else {
-            roomProxy.abort(id);
-        }
+        getProxy(rmIndex).doAbort(id);
     }
 
     private void startToRM(int id, int rmIndex) {
-        if (rmIndex == CAR_PROXY_INDEX) {
-            carProxy.start(id);
-        } else if (rmIndex == FLIGHT_PROXY_INDEX) {
-            flightProxy.start(id);
-        } else {
-            roomProxy.start(id);
-        }
+        getProxy(rmIndex).start(id);
     }
 
     public void enlist(int id, int rmIndex) {
