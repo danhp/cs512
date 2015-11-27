@@ -28,13 +28,13 @@ public interface ResourceManager {
     public void start(int id);
 
     @WebMethod
-    public void commit(int id);
+    public void doCommit(int id);
 
     @WebMethod
-    public void abort(int id);
+    public void doAbort(int id);
 
     @WebMethod
-    public boolean isStillValid(int id);
+    public boolean prepare(int id);
 
     // Flight operations //
     

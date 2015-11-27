@@ -94,19 +94,21 @@ public class TransactionManager {
                     return false;
                 }
 
+                // Phase 1.
                 // Check if we can still commit
-                if (!mw.getCarProxy().isStillValid(id) ||
-                        !mw.getFlightProxy().isStillValid(id) ||
-                        !mw.getRoomProxy().isStillValid(id)) {
+                if (!mw.getCarProxy().prepare(id) ||
+                        !mw.getFlightProxy().prepare(id) ||
+                        !mw.getRoomProxy().prepare(id)) {
                     System.out.println("Transaction was aborted as current values don't match the readSet");
                     this.abort(id);
                     return false;
                 }
 
+                // Phase 2.
                 // Execute all the operations
-                mw.getCarProxy().commit(id);
-                mw.getFlightProxy().commit(id);
-                mw.getRoomProxy().commit(id);
+                mw.getCarProxy().doCommit(id);
+                mw.getFlightProxy().doCommit(id);
+                mw.getRoomProxy().doCommit(id);
                 mw.commitCustomer(id);
 
                 // Unlock everything
@@ -122,9 +124,9 @@ public class TransactionManager {
     public boolean abort(int id) {
         if (!this.activeTransactions.containsKey(id)) return false;
 
-        mw.getCarProxy().abort(id);
-        mw.getFlightProxy().abort(id);
-        mw.getRoomProxy().abort(id);
+        mw.getCarProxy().doAbort(id);
+        mw.getFlightProxy().doAbort(id);
+        mw.getRoomProxy().doAbort(id);
         mw.abortCustomer(id);
 
         synchronized (activeTransactions) {

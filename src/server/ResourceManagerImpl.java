@@ -85,7 +85,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public void commit(int transactionID) {
+    public void doCommit(int transactionID) {
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) return;
 
@@ -105,7 +105,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public void abort(int transactionID) {
+    public void doAbort(int transactionID) {
         synchronized (this.writeSet) {
             if (!writeSet.containsKey(transactionID)) return;
             this.writeSet.remove(transactionID);
@@ -116,7 +116,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     @Override
-    public boolean isStillValid(int transactionID) {
+    public boolean prepare(int transactionID) {
         synchronized (this.readSet) {
             for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
 
