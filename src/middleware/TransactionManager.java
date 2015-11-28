@@ -309,7 +309,7 @@ public class TransactionManager {
             System.out.println("saved");
         } catch (Exception e) {
             System.out.println(e);
-            System.out.println("Failed to write to disk");
+            System.out.println("Failed to write to: " + Constants.TMANAGER_FILE);
         }
     }
 }
