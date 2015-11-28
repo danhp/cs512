@@ -5,13 +5,13 @@ public class Constants {
         ACTIVE, UNKNOWN, COMMITTED, ABORTED
     }
 
-    public final String CAR_FILE = "../data/car/master.dat";
+    public final String CAR_FILE = "src/data/car/master.dat";
 
-    public final String FLIGHT_FILE = "../data/flight/master.dat";
+    public final String FLIGHT_FILE = "src/data/flight/master.dat";
 
-    public final String ROOM_FILE = "../data/room/master.dat";
+    public final String ROOM_FILE = "src/data/room/master.dat";
 
-    public final String CUSTOMER_FILE = "../data/customer/master.dat";
+    public final String CUSTOMER_FILE = "src/data/customer/master.dat";
 
-    public final String TMANAGER_FILE= "../data/tmanager/master.dat";
+    public final static String TMANAGER_FILE= "src/data/tmanager/master.dat";
 }
