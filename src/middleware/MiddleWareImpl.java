@@ -73,7 +73,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     public void crash(String which) {
         if (which.equalsIgnoreCase("mw")) {
-            System.out.println("TM> Initiating self destruct");
+            System.out.println("TM> Initiating self destruct - BOOM");
             System.exit(-1);
         }
 
