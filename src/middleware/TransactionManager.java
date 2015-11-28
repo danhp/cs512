@@ -22,16 +22,7 @@ public class TransactionManager {
     private int transactions = 0;
     private Map<Integer, Transaction> activeTransactions = new ConcurrentHashMap<>();
 
-    private Map<Integer, ExpireTime> expireTimeMap = new ConcurrentHashMap<>();
-    class ExpireTime {
-        private long expireTime;
-
-        public ExpireTime(long time) {
-            this.expireTime = time;
-        }
-        public void setExpireTime(long newTime) {this.expireTime = newTime;}
-        public long getExpireTime() {return this.expireTime;}
-    }
+    private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
     public TransactionManager(MiddleWareImpl mw) {
         this.mw = mw;
@@ -69,7 +60,7 @@ public class TransactionManager {
         mw.startCustomer(id);
 
         synchronized (expireTimeMap) {
-            this.expireTimeMap.put(id, new ExpireTime(System.currentTimeMillis() + TRANSACTION_TIMEOUT));
+            this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         }
 
         System.out.println("Started transaction with new ID: " + id);
@@ -276,15 +267,14 @@ public class TransactionManager {
 
     public void resetTimer(int transactionID) {
         synchronized (this.expireTimeMap) {
-            long newExpireTime = System.currentTimeMillis() + TRANSACTION_TIMEOUT;
-            this.expireTimeMap.get(transactionID).setExpireTime(newExpireTime);
+            this.expireTimeMap.put(transactionID, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         }
     }
 
     private void cleanup() {
         synchronized (this.expireTimeMap) {
-            for (Map.Entry<Integer, ExpireTime> entry : this.expireTimeMap.entrySet()) {
-                if (entry.getValue().getExpireTime() < System.currentTimeMillis()) {
+            for (Map.Entry<Integer, Long> entry : this.expireTimeMap.entrySet()) {
+                if (entry.getValue() < System.currentTimeMillis()) {
                     System.out.println("Transaction " + entry.getKey() + " expired.");
                     this.abort(entry.getKey());
                 }
