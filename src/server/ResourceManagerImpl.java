@@ -10,7 +10,6 @@ import utils.Constants.TransactionStatus;
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
-import java.util.Random;
 import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
@@ -106,6 +105,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doCommit(int transactionID) {
+        //TODO log "COMMIT"
         shouldCrash(transactionID, "received decision-commit", false);
 
         synchronized (writeSet) {
@@ -130,6 +130,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doAbort(int transactionID) {
+        //TODO log "ABORT"
         shouldCrash(transactionID, "received decision-abort", false);
 
         synchronized (this.writeSet) {
@@ -149,9 +150,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
             if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
+                //TODO log "YES"
                 // send commit
                 return;
             } else {
+                //TODO log "ABORT"
                 // send abort
                 this.doAbort(transactionID);
                 throw new TransactionAbortedException();
@@ -177,15 +180,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         // Went through all the entries and they match.
 
         //TODO not showing crash after sending answer
-    }
-
-    @Override
-    public boolean haveYouCommitted(int id) {
-        shouldCrash(id, "before sending commit status (from HaveYouCommited?)", false);
-
-        boolean commitStatus = !readSet.containsKey(id);
-        System.out.println("Transaction " + id + ": Returning commit status: " + commitStatus);
-        return commitStatus;
     }
 
     @Override

@@ -194,6 +194,7 @@ public class TransactionManager {
         try {
             try {
                 future1.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                //TODO log "FLIGHT COMMITTED"
             } catch (TimeoutException e) {
                 Trace.error("Transaction " + id + " : flight RM timed out while requesting vote: " + e);
 
@@ -207,6 +208,7 @@ public class TransactionManager {
             }
             try {
                 future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                //TODO log "ROOM COMMITTED"
             } catch (TimeoutException e) {
                 Trace.error("Transaction " + id + " : room RM timed out while requesting vote: " + e);
 
@@ -220,6 +222,7 @@ public class TransactionManager {
             }
             try {
                 future3.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                //TODO log "CAR COMMITED"
             } catch (TimeoutException e) {
                 Trace.error("Transaction " + id + " : car RM timed out while requesting vote: " + e);
 
@@ -270,6 +273,7 @@ public class TransactionManager {
 
             // Phase 1.
             // Check if we can still commit
+            //TODO log "Start 2PC"
             boolean vetoAbort = allShouldPrepare(id);
 
             shouldCrash(id, "mw", "about to send decision (decision is commit=" + !vetoAbort + ")");
@@ -277,9 +281,11 @@ public class TransactionManager {
             // Phase 2.
             // Execute all the operations
             if (!vetoAbort) {
+                //TODO log "COMMIT"
                 Trace.info("every rm is prepared for commit. committing to all.");
                 allDoCommitOrAbort(id, true);
             } else {
+                //TODO commit "ABORT"
                 Trace.info("At least one RM has voted for abort. Aborting to all.");
                 this.abort(id);
             }
