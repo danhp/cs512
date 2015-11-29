@@ -5,6 +5,8 @@
 
 package server;
 
+import utils.Constants.TransactionStatus;
+
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
@@ -20,6 +22,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
+    private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
 
     // Basic operations on RMItem //
 

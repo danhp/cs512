@@ -3,6 +3,9 @@ package middleware;
 import LockManager.LockManager;
 import LockManager.DeadlockException;
 import server.Trace;
+import utils.Constants;
+import utils.Constants.TransactionStatus;
+import utils.Storage;
 
 import javax.print.Doc;
 import java.util.Map;
@@ -20,22 +23,30 @@ public class TransactionManager {
 
     private LockManager lockManager = new LockManager();
 
-    private int transactions = 0;
-    private Map<Integer, Transaction> activeTransactions = new ConcurrentHashMap<>();
-
-    private Map<Integer, ExpireTime> expireTimeMap = new ConcurrentHashMap<>();
-    class ExpireTime {
-        private long expireTime;
-
-        public ExpireTime(long time) {
-            this.expireTime = time;
-        }
-        public void setExpireTime(long newTime) {this.expireTime = newTime;}
-        public long getExpireTime() {return this.expireTime;}
-    }
+    private int transactions;
+    private Map<Integer, Transaction> activeTransactions;
+    private Map<Integer, Long> expireTimeMap;
+    private Map<Integer, TransactionStatus> statusMap;
 
     public TransactionManager(MiddleWareImpl mw) {
         this.mw = mw;
+
+        // Recover if a file is found.
+        try {
+            TMData data = (TMData) Storage.get(Constants.TMANAGER_FILE);
+            System.out.println("Recovering from file");
+            this.transactions = data.getTransactionCount();
+            this.activeTransactions = data.getActiveTransactions();
+            this.expireTimeMap = data.getExpireTimes();
+            this.statusMap = data.getStatusMap();
+
+        } catch(Exception e) {
+            System.out.println("File either not found or corrupted\nStarting new Trans Man");
+            this.transactions = 0;
+            this.activeTransactions = new ConcurrentHashMap<>();
+            this.expireTimeMap = new ConcurrentHashMap<>();
+            this.statusMap = new ConcurrentHashMap<>();
+        }
 
         // Periodic cleanup.
         new Thread(new Runnable() {
@@ -60,18 +71,17 @@ public class TransactionManager {
 
         Transaction newTransaction = new Transaction(id);
 
-        synchronized (activeTransactions) {
-            this.activeTransactions.put(id, newTransaction);
-        }
+        this.activeTransactions.put(id, newTransaction);
 
         mw.getCarProxy().start(id);
         mw.getFlightProxy().start(id);
         mw.getRoomProxy().start(id);
         mw.startCustomer(id);
 
-        synchronized (expireTimeMap) {
-            this.expireTimeMap.put(id, new ExpireTime(System.currentTimeMillis() + TRANSACTION_TIMEOUT));
-        }
+        this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
+        this.statusMap.put(id, TransactionStatus.ACTIVE);
+
+        this.save();
 
         System.out.println("Started transaction with new ID: " + id);
         return id;
@@ -322,20 +332,31 @@ public class TransactionManager {
     }
 
     public void resetTimer(int transactionID) {
-        synchronized (this.expireTimeMap) {
-            long newExpireTime = System.currentTimeMillis() + TRANSACTION_TIMEOUT;
-            this.expireTimeMap.get(transactionID).setExpireTime(newExpireTime);
-        }
+        this.expireTimeMap.put(transactionID, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
     }
 
     private void cleanup() {
         synchronized (this.expireTimeMap) {
-            for (Map.Entry<Integer, ExpireTime> entry : this.expireTimeMap.entrySet()) {
-                if (entry.getValue().getExpireTime() < System.currentTimeMillis()) {
+            for (Map.Entry<Integer, Long> entry : this.expireTimeMap.entrySet()) {
+                if (entry.getValue() < System.currentTimeMillis()) {
                     System.out.println("Transaction " + entry.getKey() + " expired.");
                     this.abort(entry.getKey());
                 }
             }
+        }
+    }
+
+    private void save() {
+        TMData toSave = new TMData(this.transactions,
+                                   this.activeTransactions,
+                                   this.expireTimeMap,
+                                   this.statusMap);
+        try {
+            Storage.set(toSave, Constants.TMANAGER_FILE);
+            System.out.println("saved");
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + Constants.TMANAGER_FILE);
         }
     }
 }

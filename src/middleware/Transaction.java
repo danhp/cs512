@@ -1,12 +1,10 @@
 package middleware;
 
+import java.io.Serializable;
 import java.util.ArrayList;
 import java.util.List;
 
-/**
- * Created by justindomingue on 2015-11-06.
- */
-public class Transaction {
+public class Transaction implements Serializable {
     private int id;
 
     private List<Operation> history = new ArrayList<Operation>();
