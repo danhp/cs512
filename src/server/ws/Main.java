@@ -7,8 +7,7 @@ import org.apache.catalina.startup.Tomcat;
 
 public class Main {
 
-    public static void main(String[] args) 
-    throws Exception {
+    public static void main(String[] args) throws Exception {
     
         if (args.length != 3) {
             System.out.println(
@@ -19,7 +18,7 @@ public class Main {
         String serviceName = args[0];
         int port = Integer.parseInt(args[1]);
         String deployDir = args[2];
-    
+
         Tomcat tomcat = new Tomcat();
         tomcat.setPort(port);
         tomcat.setBaseDir(deployDir);

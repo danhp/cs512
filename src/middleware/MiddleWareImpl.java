@@ -127,6 +127,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
                                  this.statusMap);
         try {
             Storage.set(data, Constants.CUSTOMER_FILE);
+            System.out.println("Saved Customer");
         } catch (Exception e) {
             System.out.println(e);
             System.out.println("Failed to write to: " + Constants.CUSTOMER_FILE);
@@ -195,6 +196,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized (this.readSet) {
             readSet.put(transactionID, new HashMap<String, RMItem>());
         }
+        this.save();
     }
 
     public void commitCustomer(int transactionID) {

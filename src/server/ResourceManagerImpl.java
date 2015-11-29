@@ -5,7 +5,9 @@
 
 package server;
 
+import utils.Constants;
 import utils.Constants.TransactionStatus;
+import utils.Storage;
 
 import javax.jws.WebService;
 import java.util.HashMap;
@@ -22,7 +24,44 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
-    private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
+    private Map<Integer, TransactionStatus> statusMap = new ConcurrentHashMap<>();
+
+    private String filePath;
+
+    public ResourceManagerImpl() {
+        this.filePath = System.getenv("FILEPATH");
+
+        // Recover the server info if found
+        try {
+            RMData data = (RMData) Storage.get(this.filePath);
+            System.out.println("Recovering Server from file: " + this.filePath);
+            this.m_itemHT= data.getData();
+            this.readSet = data.getReadSet();
+            this.writeSet = data.getWriteSet();
+            this.statusMap = data.getStatus();
+
+        } catch (Exception e) {
+            System.out.println("Setting up a new server database");
+            this.m_itemHT= new RMHashtable();
+            this.readSet = new ConcurrentHashMap<>();
+            this.writeSet = new ConcurrentHashMap<>();
+            this.statusMap = new ConcurrentHashMap<>();
+        }
+    }
+
+    private void save() {
+        RMData data = new RMData(this.m_itemHT,
+                this.readSet,
+                this.writeSet,
+                this.statusMap);
+        try {
+            Storage.set(data, this.filePath);
+            System.out.println("Wrote to disk");
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + this.filePath);
+        }
+    }
 
     // Basic operations on RMItem //
 
@@ -95,13 +134,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
-        synchronized (writeSet) {
-            if (writeSet.containsKey(transactionID)) return;
-            writeSet.put(transactionID, new HashMap<String, RMItem>());
-        }
-        synchronized (readSet) {
-            readSet.put(transactionID, new HashMap<String, RMItem>());
-        }
+        if (writeSet.containsKey(transactionID)) return;
+
+        writeSet.put(transactionID, new HashMap<String, RMItem>());
+        readSet.put(transactionID, new HashMap<String, RMItem>());
+
+        this.save();
     }
 
     @Override
