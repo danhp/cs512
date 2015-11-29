@@ -13,6 +13,7 @@ import utils.Storage;
 import javax.jws.WebService;
 import java.util.HashMap;
 import java.util.Map;
+import java.util.Scanner;
 import java.util.concurrent.ConcurrentHashMap;
 
 
@@ -117,6 +118,21 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
 
+    private boolean shouldCrash(int id, String msg, boolean actionOutside) {
+        Scanner scanIn = new Scanner(System.in);
+
+        Trace.warn("Transaction " + id + ": " + msg + (actionOutside ? "" : " - should I crash?") + " (j/k)");
+        char c = scanIn.next().charAt(0);
+
+        if (c == 'j')
+            if (!actionOutside)
+                this.selfDestruct();
+            else
+                return true;
+
+        return false;
+    }
+
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
@@ -133,6 +149,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doCommit(int transactionID) {
+        //TODO log "COMMIT"
+        shouldCrash(transactionID, "received decision-commit", false);
+
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) {
                 Trace.warn("Transaction " + transactionID + " does not exist. Ignoring.");
@@ -155,6 +174,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doAbort(int transactionID) {
+        //TODO log "ABORT"
+        shouldCrash(transactionID, "received decision-abort", false);
+
         synchronized (this.writeSet) {
             if (!writeSet.containsKey(transactionID)) return;
             this.writeSet.remove(transactionID);
@@ -167,6 +189,22 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public void prepare(int transactionID) throws TransactionAbortedException, InvalidTransactionException {
         System.out.println("Preparing for transaction " + transactionID);
+
+        shouldCrash(transactionID, "after receiving vote request, but before sending answer", false);
+
+        if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
+            if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
+                //TODO log "YES"
+                // send commit
+                return;
+            } else {
+                //TODO log "ABORT"
+                // send abort
+                this.doAbort(transactionID);
+                throw new TransactionAbortedException();
+            }
+        }
+
         synchronized (this.readSet) {
             if (!this.readSet.containsKey(transactionID)) { throw new InvalidTransactionException(); }
 
@@ -184,13 +222,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
         }
         // Went through all the entries and they match.
-    }
 
-    @Override
-    public boolean haveYouCommitted(int id) {
-        boolean commitStatus = !readSet.containsKey(id);
-        System.out.println("Returning commit status: " + commitStatus);
-        return commitStatus;
+        //TODO not showing crash after sending answer
     }
 
     @Override

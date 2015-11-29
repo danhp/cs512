@@ -1,6 +1,9 @@
 package middleware;
 
 import server.*;
+import utils.Constants;
+import utils.Constants.TransactionStatus;
+import utils.Storage;
 
 import javax.jws.WebService;
 import java.net.MalformedURLException;
@@ -20,12 +23,35 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     private TransactionManager tm = new TransactionManager(this);
 
+    // Customer data
+    protected RMHashtable customerHT;
+    private Map<Integer, Map<String, RMItem>> readSet;
+    private Map<Integer, Map<String, RMItem>> writeSet;
+    private Map<Integer, TransactionStatus> statusMap;
+
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.169.58","142.157.169.58","142.157.165.27" };
         String hosts[] = {"localhost","localhost","localhost" };
         int[] ports = {4000,4001,4002};
 
         setupProxies(hosts, ports);
+
+        // Recover the customer info if found
+        try {
+            RMData data = (RMData) Storage.get(Constants.CUSTOMER_FILE);
+            System.out.println("Recovering Customer from file");
+            this.customerHT = data.getData();
+            this.readSet = data.getReadSet();
+            this.writeSet = data.getWriteSet();
+            this.statusMap = data.getStatus();
+
+        } catch (Exception e) {
+            System.out.println("Setting up a new customer database");
+            this.customerHT = new RMHashtable();
+            this.readSet = new ConcurrentHashMap<>();
+            this.writeSet = new ConcurrentHashMap<>();
+            this.statusMap = new ConcurrentHashMap<>();
+        }
     }
 
     public MiddleWareImpl(String[] hosts, int[] ports) {
@@ -93,10 +119,19 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // CUSTOMER
 
-    protected RMHashtable customerHT = new RMHashtable();
-
-    private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
-    private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
+    // Store the data for failures
+    private void save() {
+        RMData data = new RMData(this.customerHT,
+                                 this.readSet,
+                                 this.writeSet,
+                                 this.statusMap);
+        try {
+            Storage.set(data, Constants.CUSTOMER_FILE);
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + Constants.CUSTOMER_FILE);
+        }
+    }
 
     // Read a data item.
     private RMItem readData(int transactionID, String key) {
