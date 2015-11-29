@@ -97,7 +97,7 @@ public class TransactionManager {
             mw.crash(which);
     }
 
-    private boolean allShouldPrepare(int id) {
+    private boolean allShouldPrepare(final int id) {
         class PrepareYourself implements Callable<String> {
             private String rm;
             public PrepareYourself(String rm) {
@@ -142,7 +142,7 @@ public class TransactionManager {
         return abort;
     }
 
-    public boolean allDoCommitOrAbort(int id, boolean doCommit) {
+    public boolean allDoCommitOrAbort(final int id, final boolean doCommit) {
         class PrayDoCommit implements Callable<String> {
             private String rm;
             private boolean decision;
