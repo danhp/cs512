@@ -1,16 +1,22 @@
 #!/bin/bash
 
 if [ $1 -eq 1 ]; then
-    export FILEPATH=src/data/car/master.dat
+    export FILEPATH=src/data/car/ptr.dat
+    export FILEMASTER=src/data/car/master.dat
+    export FILESLAVE=src/data/car/slave.dat
     ant server -Dport=4000
 fi
 
 if [ $1 -eq 2 ]; then
-    export FILEPATH=src/data/flight/master.dat
+    export FILEPATH=src/data/flight/ptr.dat
+    export FILEMASTER=src/data/flight/master.dat
+    export FILESLAVE=src/data/flight/slave.dat
     ant server -Dport=4001
 fi
 
 if [ $1 -eq 3 ]; then
-    export FILEPATH=src/data/room/master.dat
+    export FILEPATH=src/data/room/ptr.dat
+    export FILEMASTER=src/data/room/master.dat
+    export FILESLAVE=src/data/room/slave.dat
     ant server -Dport=4002
 fi

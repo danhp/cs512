@@ -10,6 +10,7 @@ import utils.Constants.TransactionStatus;
 import utils.Storage;
 
 import javax.jws.WebService;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Random;
@@ -26,22 +27,41 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
     private Map<Integer, TransactionStatus> statusMap = new ConcurrentHashMap<>();
 
-    private String filePath;
+    private String filePtr;
+    private String fileMaster;
+    private String fileSlave;
+
+    private boolean isMasterFile;
 
     public ResourceManagerImpl() {
-        this.filePath = System.getenv("FILEPATH");
+        this.filePtr = System.getenv("FILEPATH");
+        this.fileMaster = System.getenv("FILEMASTER");
+        this.fileSlave = System.getenv("FILESLAVE");
 
         // Recover the server info if found
         try {
-            RMData data = (RMData) Storage.get(this.filePath);
-            System.out.println("Recovering Server from file: " + this.filePath);
+            String ptrPath = (String) Storage.get(this.filePtr);
+            this.isMasterFile = ptrPath.equals(this.fileMaster);
+            if (this.isMasterFile) {
+                System.out.println("Master is King");
+            } else {
+                System.out.println("Slave is Mater");
+            }
+        } catch (Exception e) {
+            this.isMasterFile = true;
+            System.out.println("Pointer not found, defaulting to master");
+        }
+
+        try{
+            RMData data = (RMData) Storage.get(this.getFilePath());
+            System.out.println("Recovering Server from file: " + this.getFilePath());
             this.m_itemHT= data.getData();
             this.readSet = data.getReadSet();
             this.writeSet = data.getWriteSet();
             this.statusMap = data.getStatus();
 
         } catch (Exception e) {
-            System.out.println("Setting up a new server database");
+            System.out.println("Mater record not found, setting up a new server database");
             this.m_itemHT= new RMHashtable();
             this.readSet = new ConcurrentHashMap<>();
             this.writeSet = new ConcurrentHashMap<>();
@@ -50,17 +70,37 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     private void save() {
-        RMData data = new RMData(this.m_itemHT,
-                this.readSet,
-                this.writeSet,
-                this.statusMap);
+        RMData data = new RMData(this.m_itemHT, this.readSet, this.writeSet, this.statusMap);
+
+        // Tentatively set the pointer to the other file
+        this.isMasterFile = !this.isMasterFile;
+
         try {
-            Storage.set(data, this.filePath);
-            System.out.println("Wrote to disk");
+            // Save the data to the pointed file
+            Storage.set(data, this.getFilePath());
         } catch (Exception e) {
             System.out.println(e);
-            System.out.println("Failed to write to: " + this.filePath);
+            System.out.println("Failed to write to: " + this.getFilePath());
         }
+
+        try {
+            // Save the pointer path.
+            Storage.set(this.getFilePath(), this.filePtr);
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + this.filePtr);
+        }
+
+        // All is good with the world
+        System.out.println("Wrote to disk");
+    }
+
+    private String getFilePath() {
+        if (isMasterFile) {
+            return this.fileMaster;
+        }
+
+        return this.fileSlave;
     }
 
     // Basic operations on RMItem //
@@ -138,8 +178,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         writeSet.put(transactionID, new HashMap<String, RMItem>());
         readSet.put(transactionID, new HashMap<String, RMItem>());
-
-        this.save();
     }
 
     @Override
@@ -161,9 +199,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.writeSet.remove(transactionID);
 
         }
-        synchronized (readSet) {
-            this.readSet.remove(transactionID);
-        }
+
+        this.readSet.remove(transactionID);
+
+        this.save();
     }
 
     @Override
