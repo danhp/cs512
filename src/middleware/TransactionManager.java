@@ -177,25 +177,11 @@ public class TransactionManager {
             @Override
             public String call() throws Exception {
                 Trace.info("Transaction " + id + ": sending decision commit="+doCommit+ " to RM " + this.rm);
-                try {
-                    if (doCommit)
-                        mw.getProxy(this.rm).doCommit(id);
-                    else
-                        mw.getProxy(this.rm).doAbort(id);
-                } catch (Exception e) {
-                    Trace.error("Transaction " + id + ": RM " + this.rm + " probably died in an uncertain state. Waiting 10 seconds and then sending the decision again.");
-                    Thread.sleep(COMMITTED_REQUEST_TIMEOUT);
+                if (doCommit)
+                    mw.getProxy(this.rm).doCommit(id);
+                else
+                    mw.getProxy(this.rm).doAbort(id);
 
-                    if (this.decision) {
-                        mw.getProxy(this.rm).doCommit(id);
-                    } else {
-                        mw.getProxy(this.rm).doAbort(id);
-                    }
-                    Thread.sleep(COMMITTED_REQUEST_TIMEOUT);
-
-                    Trace.info("Transaction " + id + ": asking RM " + this.rm + " if it has committed");
-                    mw.haveYouCommitted(id, this.rm);
-                }
                 return this.rm + " has committed!";
             }
         }

@@ -116,11 +116,6 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         getProxy(rm).prepare(id);
     }
 
-    public void haveYouCommitted(int id, String rm) throws Exception {
-        Trace.info("Transaction " + id + " : asking RM " + this.rm + " for commit status.");
-        getProxy(rm).haveYouCommitted(id);
-    }
-
     // CUSTOMER
 
     // Store the data for failures
