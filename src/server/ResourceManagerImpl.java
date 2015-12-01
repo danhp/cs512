@@ -60,6 +60,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.writeSet = data.getWriteSet();
             this.statusMap = data.getStatus();
 
+            this.recover();
+
         } catch (Exception e) {
             System.out.println("Mater record not found, setting up a new server database");
             this.m_itemHT= new RMHashtable();
@@ -101,6 +103,29 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
 
         return this.fileSlave;
+    }
+
+    private void recover() {
+        for (Map.Entry<Integer, TransactionStatus> entry : this.statusMap.entrySet()) {
+
+            // Transaction had not yet voted.
+            if (entry.getValue() == TransactionStatus.ACTIVE) {
+                this.doAbort(entry.getKey());
+                continue;
+            }
+
+            // Transaction waiting for instructions
+            if (entry.getValue() == TransactionStatus.UNKNOWN) {
+                // just wait?
+                continue;
+            }
+
+            // Commited, send the info if asked for it
+            if (entry.getValue() == TransactionStatus.COMMITTED) {
+                // just wait?
+                continue;
+            }
+        }
     }
 
     // Basic operations on RMItem //
@@ -178,6 +203,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         writeSet.put(transactionID, new HashMap<String, RMItem>());
         readSet.put(transactionID, new HashMap<String, RMItem>());
+
+        this.statusMap.put(transactionID, TransactionStatus.ACTIVE);
     }
 
     @Override
@@ -187,6 +214,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) {
                 Trace.warn("Transaction " + transactionID + " does not exist. Ignoring.");
+                return;
             }
 
             for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
@@ -203,6 +231,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         this.readSet.remove(transactionID);
 
         this.save();
+
+        this.statusMap.put(transactionID, TransactionStatus.COMMITTED);
     }
 
     @Override
@@ -252,6 +282,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
         }
         // Went through all the entries and they match.
+
+        this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
 
         //TODO not showing crash after sending answer
     }

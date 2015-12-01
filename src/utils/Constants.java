@@ -2,7 +2,7 @@ package utils;
 
 public class Constants {
     public enum TransactionStatus {
-        ACTIVE, UNKNOWN, COMMITTED, ABORTED
+        ACTIVE, UNKNOWN, COMMITTED, ABORTED, DONE
     }
 
     public final static String CUSTOMER_PTR = "src/data/customer/ptr.dat";

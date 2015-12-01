@@ -111,6 +111,8 @@ public class TransactionManager {
             }
         }
 
+        this.statusMap.put(id, TransactionStatus.PREPARED);
+
         ExecutorService executor = Executors.newFixedThreadPool(3);
         Future<String> future1 = executor.submit(new PrepareYourself("flight"));
         Future<String> future2 = executor.submit(new PrepareYourself("room"));
