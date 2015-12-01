@@ -6,7 +6,10 @@
 package server;
 
 import server.ws.ResourceManager;
+import middleware.TMData;
+import utils.Constants;
 import utils.Constants.TransactionStatus;
+import utils.Storage;
 
 import javax.jws.WebService;
 import java.util.HashMap;
@@ -20,7 +23,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private static long TRANSACTION_TIMEOUT = 60000;    // used to handle VOTE-REQ timeouts
 
-    protected RMHashtable m_itemHT = new RMHashtable();
+    protected RMHashtable m_itemHT;
 
     private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
@@ -46,6 +49,29 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 }
             }
         }).start();    }
+
+    //constructor to allow potential recovery of RM
+    //TO DO: Rm knows and understands what type of RM it is
+    public ResourceManagerImpl() {
+
+        // Recover if a file is found for RM.
+        try {
+            RMData data = (RMData) Storage.get(Constants.CAR_FILE);
+            System.out.println("Recovering from RM Data within file");
+            this.m_itemHT = data.getData();
+            this.readSet = data.getReadSet();
+            this.writeSet = data.getWriteSet();
+            this.status = data.getStatus();
+
+        } catch (Exception ex) {
+            System.out.println("File either not found or corrupted\nStarting new RM");
+            this.m_itemHT = new RMHashtable();
+            this.readSet = new ConcurrentHashMap<>();
+            this.writeSet = new ConcurrentHashMap<>();
+            this.status = new ConcurrentHashMap<>();
+        }
+    }
+
 
     // Basic operations on RMItem //
 
@@ -99,6 +125,22 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
     }
 
+    //saves data to RM file in case of crash
+    private void save() {
+        RMData toSave = new RMData(this.m_itemHT,
+                this.readSet,
+                this.writeSet,
+                this.status);
+        try {
+            //save to storage based on type of RM
+            Storage.set(toSave, Constants.CAR_FILE);
+            System.out.println("saved car file");
+        } catch (Exception ex) {
+            System.out.println(ex);
+            System.out.println("Failed to write to disk");
+        }
+    }
+
 
     private boolean shouldCrash(int id, String msg, boolean actionOutside) {
         Scanner scanIn = new Scanner(System.in);
@@ -127,6 +169,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         synchronized (readSet) {
             readSet.put(transactionID, new HashMap<String, RMItem>());
         }
+
+        this.save();
     }
 
     @Override
