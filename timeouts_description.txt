@@ -1,0 +1,10 @@
+Timeout Possibilities
+
+See slide 6 of Commit
+
+- Coordinator
+  - waiting for votes: abort
+- Participant
+  - waiting for VOTE-REQ (prepare) : abort - the RM will abort after a X seconds - it is assumed that the middleware has crashed or is unavailable and so it is better to abort as the middleaware will abort on reboot anyway
+  - waitinf for a decision: just wait - the wait is not blocking because the RMs do not hold locks
+
