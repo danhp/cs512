@@ -28,6 +28,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private Map<Integer, Map<String, RMItem>> readSet;
     private Map<Integer, Map<String, RMItem>> writeSet;
     private Map<Integer, TransactionStatus> statusMap;
+    private boolean isMaterFile;
 
     public MiddleWareImpl() {
 //        String hosts[] = {"142.157.169.58","142.157.169.58","142.157.165.27" };
@@ -38,7 +39,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
         // Recover the customer info if found
         try {
-            RMData data = (RMData) Storage.get(Constants.CUSTOMER_FILE);
+            RMData data = (RMData) Storage.get((String) Storage.get(Constants.CUSTOMER_PTR));
             System.out.println("Recovering Customer from file");
             this.customerHT = data.getData();
             this.readSet = data.getReadSet();
@@ -52,15 +53,18 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
             this.writeSet = new ConcurrentHashMap<>();
             this.statusMap = new ConcurrentHashMap<>();
         }
-    }
 
-    public MiddleWareImpl(String[] hosts, int[] ports) {
-        if (ports.length != hosts.length) {
-            System.out.println("Ports array length doesn't match hosts array length");
-            return;
+        try {
+            this.isMaterFile = Storage.get(Constants.CUSTOMER_PTR).equals(Constants.CUSTOMER_MASTER);
+            if (this.isMaterFile) {
+                System.out.println("Master is King");
+            } else {
+                System.out.println("Slave is Mater");
+            }
+        } catch (Exception e) {
+            this.isMaterFile = true;
+            System.out.println("Pointer not found, defaulting to master");
         }
-
-        setupProxies(hosts, ports);
     }
 
     public void setupProxies(String[] hosts, int[] ports)
@@ -121,16 +125,36 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // Store the data for failures
     private void save() {
-        RMData data = new RMData(this.customerHT,
-                                 this.readSet,
-                                 this.writeSet,
-                                 this.statusMap);
+        RMData data = new RMData(this.customerHT, this.readSet, this.writeSet, this.statusMap);
+
+        // Tentatively set master as the other file
+        this.isMaterFile = !this.isMaterFile;
+
         try {
-            Storage.set(data, Constants.CUSTOMER_FILE);
+            // Save data to the pointed file.
+            Storage.set(data, this.getFilePath());
         } catch (Exception e) {
             System.out.println(e);
-            System.out.println("Failed to write to: " + Constants.CUSTOMER_FILE);
+            System.out.println("Failed to write to: " + this.getFilePath());
         }
+
+        try {
+            // Save the pointer path.
+            Storage.set(this.getFilePath(), Constants.CUSTOMER_PTR);
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + Constants.CUSTOMER_PTR);
+        }
+
+        // All is good with the world
+        System.out.println("Saved Customer");
+    }
+
+    private String getFilePath() {
+        if (this.isMaterFile) {
+            return Constants.CUSTOMER_MASTER;
+        }
+        return Constants.CUSTOMER_SLAVE;
     }
 
     // Read a data item.
@@ -195,6 +219,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized (this.readSet) {
             readSet.put(transactionID, new HashMap<String, RMItem>());
         }
+        this.save();
     }
 
     public void commitCustomer(int transactionID) {
@@ -211,9 +236,10 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
             this.writeSet.remove(transactionID);
         }
-        synchronized (readSet) {
-            this.readSet.remove(transactionID);
-        }
+        this.readSet.remove(transactionID);
+
+        // Write to disk
+        this.save();
     }
 
     public void abortCustomer(int transactionID) {

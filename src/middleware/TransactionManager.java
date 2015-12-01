@@ -40,6 +40,8 @@ public class TransactionManager {
             this.expireTimeMap = data.getExpireTimes();
             this.statusMap = data.getStatusMap();
 
+            this.recover();
+
         } catch(Exception e) {
             System.out.println("File either not found or corrupted\nStarting new Trans Man");
             this.transactions = 0;
@@ -64,6 +66,26 @@ public class TransactionManager {
                 }
             }
         }).start();
+    }
+
+    private void recover() {
+        for (Map.Entry<Integer, TransactionStatus> entry : this.statusMap.entrySet()) {
+            // No decision reached before the crash.
+            if (entry.getValue() == TransactionStatus.ACTIVE) {
+                // send abort to all
+                this.allDoCommitOrAbort(entry.getKey(), false);
+                continue;
+            }
+
+            // Decision of committing was reached before crash
+            if (entry.getValue() == TransactionStatus.COMMITTED) {
+                this.allDoCommitOrAbort(entry.getKey(), true);
+                continue;
+            }
+
+            // Ignore all other cases as no action required?
+        }
+
     }
 
     public int start() {
@@ -126,6 +148,7 @@ public class TransactionManager {
             shouldCrash(id, "mw", "about to receive last vote request (have received some but not all)");
 
             future3.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            this.statusMap.put(id, TransactionStatus.COMMITTED);
         } catch(TimeoutException e) {
             Trace.error("Transaction " + id + " : thread timed out while requesting vote: " + e);
             abort = true;
@@ -296,6 +319,9 @@ public class TransactionManager {
 
             this.activeTransactions.remove(id);
             this.expireTimeMap.remove(id);
+
+            this.statusMap.put(id, TransactionStatus.DONE);
+
             return true;
         }
     }

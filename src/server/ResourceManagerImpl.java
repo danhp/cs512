@@ -5,9 +5,12 @@
 
 package server;
 
+import utils.Constants;
 import utils.Constants.TransactionStatus;
+import utils.Storage;
 
 import javax.jws.WebService;
+import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -21,7 +24,108 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private Map<Integer, Map<String, RMItem>> readSet = new ConcurrentHashMap<>();
     private Map<Integer, Map<String, RMItem>> writeSet = new ConcurrentHashMap<>();
-    private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
+    private Map<Integer, TransactionStatus> statusMap = new ConcurrentHashMap<>();
+
+    private String filePtr;
+    private String fileMaster;
+    private String fileSlave;
+
+    private boolean isMasterFile;
+
+    public ResourceManagerImpl() {
+        this.filePtr = System.getenv("FILEPATH");
+        this.fileMaster = System.getenv("FILEMASTER");
+        this.fileSlave = System.getenv("FILESLAVE");
+
+        // Recover the server info if found
+        try {
+            String ptrPath = (String) Storage.get(this.filePtr);
+            this.isMasterFile = ptrPath.equals(this.fileMaster);
+            if (this.isMasterFile) {
+                System.out.println("Master is King");
+            } else {
+                System.out.println("Slave is Mater");
+            }
+        } catch (Exception e) {
+            this.isMasterFile = true;
+            System.out.println("Pointer not found, defaulting to master");
+        }
+
+        try{
+            RMData data = (RMData) Storage.get(this.getFilePath());
+            System.out.println("Recovering Server from file: " + this.getFilePath());
+            this.m_itemHT= data.getData();
+            this.readSet = data.getReadSet();
+            this.writeSet = data.getWriteSet();
+            this.statusMap = data.getStatus();
+
+            this.recover();
+
+        } catch (Exception e) {
+            System.out.println("Mater record not found, setting up a new server database");
+            this.m_itemHT= new RMHashtable();
+            this.readSet = new ConcurrentHashMap<>();
+            this.writeSet = new ConcurrentHashMap<>();
+            this.statusMap = new ConcurrentHashMap<>();
+        }
+    }
+
+    private void save() {
+        RMData data = new RMData(this.m_itemHT, this.readSet, this.writeSet, this.statusMap);
+
+        // Tentatively set the pointer to the other file
+        this.isMasterFile = !this.isMasterFile;
+
+        try {
+            // Save the data to the pointed file
+            Storage.set(data, this.getFilePath());
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + this.getFilePath());
+        }
+
+        try {
+            // Save the pointer path.
+            Storage.set(this.getFilePath(), this.filePtr);
+        } catch (Exception e) {
+            System.out.println(e);
+            System.out.println("Failed to write to: " + this.filePtr);
+        }
+
+        // All is good with the world
+        System.out.println("Wrote to disk");
+    }
+
+    private String getFilePath() {
+        if (isMasterFile) {
+            return this.fileMaster;
+        }
+
+        return this.fileSlave;
+    }
+
+    private void recover() {
+        for (Map.Entry<Integer, TransactionStatus> entry : this.statusMap.entrySet()) {
+
+            // Transaction had not yet voted.
+            if (entry.getValue() == TransactionStatus.ACTIVE) {
+                this.doAbort(entry.getKey());
+                continue;
+            }
+
+            // Transaction waiting for instructions
+            if (entry.getValue() == TransactionStatus.UNKNOWN) {
+                // just wait?
+                continue;
+            }
+
+            // Commited, send the info if asked for it
+            if (entry.getValue() == TransactionStatus.COMMITTED) {
+                // just wait?
+                continue;
+            }
+        }
+    }
 
     // Basic operations on RMItem //
 
@@ -94,13 +198,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
-        synchronized (writeSet) {
-            if (writeSet.containsKey(transactionID)) return;
-            writeSet.put(transactionID, new HashMap<String, RMItem>());
-        }
-        synchronized (readSet) {
-            readSet.put(transactionID, new HashMap<String, RMItem>());
-        }
+        if (writeSet.containsKey(transactionID)) return;
+
+        writeSet.put(transactionID, new HashMap<String, RMItem>());
+        readSet.put(transactionID, new HashMap<String, RMItem>());
+
+        this.statusMap.put(transactionID, TransactionStatus.ACTIVE);
     }
 
     @Override
@@ -111,6 +214,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) {
                 Trace.warn("Transaction " + transactionID + " does not exist. Ignoring.");
+                return;
             }
 
             for (Map.Entry<String, RMItem> entry : writeSet.get(transactionID).entrySet()) {
@@ -123,9 +227,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.writeSet.remove(transactionID);
 
         }
-        synchronized (readSet) {
-            this.readSet.remove(transactionID);
-        }
+
+        this.readSet.remove(transactionID);
+
+        this.save();
+
+        this.statusMap.put(transactionID, TransactionStatus.COMMITTED);
     }
 
     @Override
@@ -178,6 +285,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             }
         }
         // Went through all the entries and they match.
+
+        this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
 
         //TODO not showing crash after sending answer
     }
