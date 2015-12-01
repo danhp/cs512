@@ -6,6 +6,7 @@
 package server;
 
 import utils.Constants;
+import server.ws.ResourceManager;
 import utils.Constants.TransactionStatus;
 import utils.Storage;
 
@@ -19,6 +20,10 @@ import java.util.concurrent.ConcurrentHashMap;
 
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
+
+    private static long TRANSACTION_TIMEOUT = 60000;    // used to handle VOTE-REQ timeouts
+    private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
+    private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
 
@@ -68,6 +73,23 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.writeSet = new ConcurrentHashMap<>();
             this.statusMap = new ConcurrentHashMap<>();
         }
+
+        // Periodic cleanup.
+        new Thread(new Runnable() {
+            @Override
+            public void run() {
+                while (true) {
+                    try {
+                        Thread.sleep(3*TRANSACTION_TIMEOUT);
+                        cleanup();
+                    } catch (InterruptedException e) {
+                        System.out.println("EXCEPTION: ");
+                        System.out.println(e.getMessage());
+                        e.printStackTrace();
+                    }
+                }
+            }
+        }).start();
     }
 
     private void save() {
@@ -198,16 +220,21 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
-        if (writeSet.containsKey(transactionID)) return;
+        this.resetTimer(transactionID);
 
-        writeSet.put(transactionID, new HashMap<String, RMItem>());
-        readSet.put(transactionID, new HashMap<String, RMItem>());
-
-        this.statusMap.put(transactionID, TransactionStatus.ACTIVE);
+        synchronized (writeSet) {
+            if (writeSet.containsKey(transactionID)) return;
+            writeSet.put(transactionID, new HashMap<String, RMItem>());
+        }
+        synchronized (readSet) {
+            readSet.put(transactionID, new HashMap<String, RMItem>());
+        }
     }
 
     @Override
     public void doCommit(int transactionID) {
+        this.expireTimeMap.remove(transactionID);
+
         //TODO log "COMMIT"
         shouldCrash(transactionID, "received decision-commit", false);
 
@@ -237,6 +264,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doAbort(int transactionID) {
+        this.expireTimeMap.remove(transactionID);
+
         //TODO log "ABORT"
         shouldCrash(transactionID, "received decision-abort", false);
 
@@ -251,25 +280,27 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void prepare(int transactionID) throws TransactionAbortedException, InvalidTransactionException {
-        System.out.println("Preparing for transaction " + transactionID);
-
-        shouldCrash(transactionID, "after receiving vote request, but before sending answer", false);
-
-        if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
-            if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
-                //TODO log "YES"
-                // send commit
-                return;
-            } else {
-                //TODO log "ABORT"
-                // send abort
-                this.doAbort(transactionID);
-                throw new TransactionAbortedException();
-            }
-        }
-
         synchronized (this.readSet) {
             if (!this.readSet.containsKey(transactionID)) { throw new InvalidTransactionException(); }
+
+            this.expireTimeMap.remove(transactionID);   // remove timeout
+
+            System.out.println("Preparing for transaction " + transactionID);
+
+            shouldCrash(transactionID, "after receiving vote request, but before sending answer", false);
+
+            if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
+                if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
+                    //TODO log "YES"
+                    // send commit
+                    return;
+                } else {
+                    //TODO log "ABORT"
+                    // send abort
+                    this.doAbort(transactionID);
+                    throw new TransactionAbortedException();
+                }
+            }
 
             for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
 
@@ -397,6 +428,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     @Override
     public boolean addFlight(int id, int flightNumber,
                              int numSeats, int flightPrice) {
+        this.resetTimer(id);
+
         Trace.info("RM::addFlight(" + id + ", " + flightNumber
                 + ", $" + flightPrice + ", " + numSeats + ") called.");
         Flight curObj = (Flight) readData(id, Flight.getKey(flightNumber));
@@ -422,17 +455,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public boolean deleteFlight(int id, int flightNumber) {
+        this.resetTimer(id);
         return deleteItem(id, Flight.getKey(flightNumber));
     }
 
     // Returns the number of empty seats on this flight.
     @Override
     public int queryFlight(int id, int flightNumber) {
+        this.resetTimer(id);
         return queryNum(id, Flight.getKey(flightNumber));
     }
 
     // Returns price of this flight.
     public int queryFlightPrice(int id, int flightNumber) {
+        this.resetTimer(id);
         return queryPrice(id, Flight.getKey(flightNumber));
     }
 
@@ -480,6 +516,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // its current price.
     @Override
     public boolean addCars(int id, String location, int numCars, int carPrice) {
+        this.resetTimer(id);
         Trace.info("RM::addCars(" + id + ", " + location + ", "
                 + numCars + ", $" + carPrice + ") called.");
         Car curObj = (Car) readData(id, Car.getKey(location));
@@ -506,18 +543,21 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Delete cars from a location.
     @Override
     public boolean deleteCars(int id, String location) {
+        this.resetTimer(id);
         return deleteItem(id, Car.getKey(location));
     }
 
     // Returns the number of cars available at a location.
     @Override
     public int queryCars(int id, String location) {
+        this.resetTimer(id);
         return queryNum(id, Car.getKey(location));
     }
 
     // Returns price of cars at this location.
     @Override
     public int queryCarsPrice(int id, String location) {
+        this.resetTimer(id);
         return queryPrice(id, Car.getKey(location));
     }
 
@@ -528,6 +568,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // its current price.
     @Override
     public boolean addRooms(int id, String location, int numRooms, int roomPrice) {
+        this.resetTimer(id);
         Trace.info("RM::addRooms(" + id + ", " + location + ", "
                 + numRooms + ", $" + roomPrice + ") called.");
         Room curObj = (Room) readData(id, Room.getKey(location));
@@ -554,24 +595,28 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Delete rooms from a location.
     @Override
     public boolean deleteRooms(int id, String location) {
+        this.resetTimer(id);
         return deleteItem(id, Room.getKey(location));
     }
 
     // Returns the number of rooms available at a location.
     @Override
     public int queryRooms(int id, String location) {
+        this.resetTimer(id);
         return queryNum(id, Room.getKey(location));
     }
 
     // Returns room price at this location.
     @Override
     public int queryRoomsPrice(int id, String location) {
+        this.resetTimer(id);
         return queryPrice(id, Room.getKey(location));
     }
 
     // Add flight reservation to this customer.
     @Override
     public boolean reserveFlight(int id, int customerId, int flightNumber) {
+        this.resetTimer(id);
         return reserveItem(id, customerId,
                 Flight.getKey(flightNumber), String.valueOf(flightNumber));
     }
@@ -579,12 +624,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // Add car reservation to this customer.
     @Override
     public boolean reserveCar(int id, int customerId, String location) {
+        this.resetTimer(id);
         return reserveItem(id, customerId, Car.getKey(location), location);
     }
 
     // Add room reservation to this customer.
     @Override
     public boolean reserveRoom(int id, int customerId, String location) {
+        this.resetTimer(id);
         return reserveItem(id, customerId, Room.getKey(location), location);
     }
 
@@ -593,5 +640,20 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public boolean shutdown() {
         System.exit(0);
         return true;
+    }
+
+    private void cleanup() {
+        synchronized (this.expireTimeMap) {
+            for (Map.Entry<Integer, Long> entry : this.expireTimeMap.entrySet()) {
+                if (entry.getValue() < System.currentTimeMillis()) {
+                    System.out.println("Transaction " + entry.getKey() + " expired.");
+                    this.doAbort(entry.getKey());
+                }
+            }
+        }
+    }
+
+    private void resetTimer(int id) {
+        this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
     }
 }
