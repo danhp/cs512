@@ -1,5 +1,10 @@
 #!/bin/bash
 
+if [ $# -eq 2 ]; then
+    echo "PREPARING SERVER"
+    ant prepare-server
+fi
+
 if [ $1 -eq 1 ]; then
     export FILEPATH=src/data/car/ptr.dat
     export FILEMASTER=src/data/car/master.dat

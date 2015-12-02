@@ -21,7 +21,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 
-    private static long TRANSACTION_TIMEOUT = 60000;    // used to handle VOTE-REQ timeouts
+    private static long TRANSACTION_TIMEOUT = 60000/2;    // used to handle VOTE-REQ timeouts
     private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
     private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
@@ -220,19 +220,23 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     // TRANSACTIONS
     @Override
     public void start(int transactionID) {
-        this.resetTimer(transactionID);
+        Trace.info("Started transaction " + transactionID);
 
         synchronized (writeSet) {
             if (writeSet.containsKey(transactionID)) return;
-            writeSet.put(transactionID, new HashMap<String, RMItem>());
+            writeSet.put(transactionID, new HashMap<>());
         }
         synchronized (readSet) {
-            readSet.put(transactionID, new HashMap<String, RMItem>());
+            readSet.put(transactionID, new HashMap<>());
         }
+
+        this.resetTimer(transactionID);
     }
 
     @Override
     public void doCommit(int transactionID) {
+        Trace.info("Committing transaction " + transactionID);
+
         this.expireTimeMap.remove(transactionID);
 
         //TODO log "COMMIT"
@@ -264,6 +268,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doAbort(int transactionID) {
+        Trace.info("Committing transaction " + transactionID);
+
         this.expireTimeMap.remove(transactionID);
 
         //TODO log "ABORT"
@@ -280,12 +286,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void prepare(int transactionID) throws TransactionAbortedException, InvalidTransactionException {
+        Trace.info("Preparing for transaction " + transactionID);
+
+        this.expireTimeMap.remove(transactionID);   // remove timeout
+
         synchronized (this.readSet) {
             if (!this.readSet.containsKey(transactionID)) { throw new InvalidTransactionException(); }
-
-            this.expireTimeMap.remove(transactionID);   // remove timeout
-
-            System.out.println("Preparing for transaction " + transactionID);
 
             shouldCrash(transactionID, "after receiving vote request, but before sending answer", false);
 
@@ -654,6 +660,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     private void resetTimer(int id) {
+        Trace.info("Resetting timer of transaction " + id);
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
     }
 }

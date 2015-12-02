@@ -15,7 +15,7 @@ import java.util.Scanner;
 public class TransactionManager {
 
     // 1 min timeout
-    private static long TRANSACTION_TIMEOUT = 60000;
+    private static long TRANSACTION_TIMEOUT = 6000000;
     private static long VOTE_REQUEST_TIMEOUT = 10;  //10 seconds
     private static long COMMITTED_REQUEST_TIMEOUT = 10;  //10 seconds
 
@@ -195,7 +195,7 @@ public class TransactionManager {
         shouldCrash(id, "mw", "after having sent all decisions");
 
         // Collecting decisions
-        ExecutorService executor = Executors.newSingleThreadExecutor();
+        ExecutorService executor = Executors.newFixedThreadPool(3);
         Future<String> future1 = executor.submit(new PrayDoCommit("flight", doCommit));
         Future<String> future2 = executor.submit(new PrayDoCommit("room", doCommit));
         Future<String> future3 = executor.submit(new PrayDoCommit("car", doCommit));
