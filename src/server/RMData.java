@@ -10,15 +10,18 @@ public class RMData implements Serializable {
     private Map<Integer, Map<String, RMItem>> readSet;
     private Map<Integer, Map<String, RMItem>> writeSet;
     private Map<Integer, TransactionStatus> status;
+    private Map<Integer, Long> expireMap;
 
     public RMData(RMHashtable data,
                   Map<Integer, Map<String, RMItem>> readSet,
                   Map<Integer, Map<String, RMItem>> writeSet,
-                  Map<Integer, TransactionStatus> status){
+                  Map<Integer, TransactionStatus> status,
+                  Map<Integer, Long> expireMap){
         this.data = data;
         this.readSet = readSet;
         this.writeSet = writeSet;
         this.status = status;
+        this.expireMap = expireMap;
     }
 
     public RMHashtable getData() {
@@ -34,6 +37,10 @@ public class RMData implements Serializable {
     }
 
     public Map<Integer, TransactionStatus> getStatus() {
-        return status;
+        return this.status;
+    }
+
+    public Map<Integer, Long> getExpireMap() {
+        return this.expireMap;
     }
 }

@@ -5,13 +5,10 @@
 
 package server;
 
-import utils.Constants;
-import server.ws.ResourceManager;
 import utils.Constants.TransactionStatus;
 import utils.Storage;
 
 import javax.jws.WebService;
-import java.net.Socket;
 import java.util.HashMap;
 import java.util.Map;
 import java.util.Scanner;
@@ -22,7 +19,6 @@ import java.util.concurrent.ConcurrentHashMap;
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private static long TRANSACTION_TIMEOUT = 60000/2;    // used to handle VOTE-REQ timeouts
-    private Map<Integer, TransactionStatus> status = new ConcurrentHashMap<>();
     private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
@@ -63,6 +59,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.readSet = data.getReadSet();
             this.writeSet = data.getWriteSet();
             this.statusMap = data.getStatus();
+            this.expireTimeMap = data.getExpireMap();
 
             this.recover();
 
@@ -72,6 +69,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.readSet = new ConcurrentHashMap<>();
             this.writeSet = new ConcurrentHashMap<>();
             this.statusMap = new ConcurrentHashMap<>();
+            this.expireTimeMap = new ConcurrentHashMap<>();
         }
 
         // Periodic cleanup.
@@ -93,7 +91,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     private void save() {
-        RMData data = new RMData(this.m_itemHT, this.readSet, this.writeSet, this.statusMap);
+        RMData data = new RMData(this.m_itemHT, this.readSet, this.writeSet, this.statusMap, this.expireTimeMap);
 
         // Tentatively set the pointer to the other file
         this.isMasterFile = !this.isMasterFile;
@@ -225,10 +223,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         synchronized (writeSet) {
             if (writeSet.containsKey(transactionID)) return;
-            writeSet.put(transactionID, new HashMap<>());
+            writeSet.put(transactionID, new ConcurrentHashMap<String, RMItem>());
         }
         synchronized (readSet) {
-            readSet.put(transactionID, new HashMap<>());
+            readSet.put(transactionID, new ConcurrentHashMap<String, RMItem>());
         }
 
         this.resetTimer(transactionID);
