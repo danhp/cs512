@@ -127,7 +127,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 
     private void recover() {
-        for (Map.Entry<Integer, TransactionStatus> entry : this.statusMap.entrySet()) {
+        Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
+        for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
 
             // Transaction had not yet voted.
             if (entry.getValue() == TransactionStatus.ACTIVE) {
@@ -239,7 +240,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         this.expireTimeMap.remove(transactionID);
 
-        //TODO log "COMMIT"
         shouldCrash(transactionID, "received decision-commit", false);
 
         synchronized (writeSet) {
@@ -272,7 +272,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         this.expireTimeMap.remove(transactionID);
 
-        //TODO log "ABORT"
         shouldCrash(transactionID, "received decision-abort", false);
 
         synchronized (this.writeSet) {
@@ -282,6 +281,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         synchronized (this.readSet) {
             this.readSet.remove(transactionID);
         }
+
+        this.statusMap.put(transactionID, TransactionStatus.ABORTED);
     }
 
     @Override
@@ -297,13 +298,13 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
             if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
                 if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
-                    //TODO log "YES"
                     // send commit
+                    this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
                     return;
                 } else {
-                    //TODO log "ABORT"
                     // send abort
                     this.doAbort(transactionID);
+                    this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                     throw new TransactionAbortedException();
                 }
             }
@@ -314,7 +315,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
 
                     if (inDatabase != null){
-                        if (inDatabase.equals(entry.getValue()))
+                        if (inDatabase == entry.getValue())
+                            this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                             throw new InvalidTransactionException();
                     }
                 }
@@ -324,8 +326,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         // Went through all the entries and they match.
 
         this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
-
-        //TODO not showing crash after sending answer
     }
 
     @Override

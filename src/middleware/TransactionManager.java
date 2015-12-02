@@ -7,7 +7,7 @@ import utils.Constants;
 import utils.Constants.TransactionStatus;
 import utils.Storage;
 
-import javax.print.Doc;
+import java.util.HashMap;
 import java.util.Map;
 import java.util.concurrent.*;
 import java.util.Scanner;
@@ -69,7 +69,8 @@ public class TransactionManager {
     }
 
     private void recover() {
-        for (Map.Entry<Integer, TransactionStatus> entry : this.statusMap.entrySet()) {
+        Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
+        for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
             // No decision reached before the crash.
             if (entry.getValue() == TransactionStatus.ACTIVE) {
                 // send abort to all
