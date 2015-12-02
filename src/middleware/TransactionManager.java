@@ -7,10 +7,8 @@ import utils.Constants;
 import utils.Constants.TransactionStatus;
 import utils.Storage;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.*;
 import java.util.concurrent.*;
-import java.util.Scanner;
 
 public class TransactionManager {
 
@@ -74,13 +72,13 @@ public class TransactionManager {
             // No decision reached before the crash.
             if (entry.getValue() == TransactionStatus.ACTIVE) {
                 // send abort to all
-                this.allDoCommitOrAbort(entry.getKey(), false);
+                this.allDoCommitOrAbort(entry.getKey(), false, new ArrayList<>());  //TODO save enlisted RMs
                 continue;
             }
 
             // Decision of committing was reached before crash
             if (entry.getValue() == TransactionStatus.COMMITTED) {
-                this.allDoCommitOrAbort(entry.getKey(), true);
+                this.allDoCommitOrAbort(entry.getKey(), true, new ArrayList<>());   // TODO save enlisted RMs
                 continue;
             }
 
@@ -96,10 +94,11 @@ public class TransactionManager {
 
         this.activeTransactions.put(id, newTransaction);
 
-        mw.getCarProxy().start(id);
-        mw.getFlightProxy().start(id);
-        mw.getRoomProxy().start(id);
-        mw.startCustomer(id);
+        // start at rms will be triggered later when rm is requested
+//        mw.getCarProxy().start(id);
+//        mw.getFlightProxy().start(id);
+//        mw.getRoomProxy().start(id);
+//        mw.startCustomer(id);
 
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         this.statusMap.put(id, TransactionStatus.ACTIVE);
@@ -120,10 +119,10 @@ public class TransactionManager {
             mw.crash(which);
     }
 
-    private boolean allShouldPrepare(final int id) {
+    private boolean allShouldPrepare(final int id, Set<Integer> rms) {
         class PrepareYourself implements Callable<String> {
-            private String rm;
-            public PrepareYourself(String rm) {
+            private int rm;
+            public PrepareYourself(int rm) {
                 this.rm = rm;
             }
 
@@ -134,30 +133,29 @@ public class TransactionManager {
             }
         }
 
-        ExecutorService executor = Executors.newFixedThreadPool(3);
-        Future<String> future1 = executor.submit(new PrepareYourself("flight"));
-        Future<String> future2 = executor.submit(new PrepareYourself("room"));
-        Future<String> future3 = executor.submit(new PrepareYourself("car"));
+        ExecutorService executor = Executors.newFixedThreadPool(rms.size());
+        List<Future<String>> futures = new ArrayList<>();
+        for (int rm : rms) {
+            futures.add(executor.submit(new PrepareYourself(rm)));
+        }
 
         shouldCrash(id, "mw", "about to receive vote requests");
 
         boolean abort = false;
         try {
-            future1.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-            future2.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-
-            shouldCrash(id, "mw", "about to receive last vote request (have received some but not all)");
-
-            future3.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            // Get all futures
+            for (Future<String> future : futures) {
+                future.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+            }
             this.statusMap.put(id, TransactionStatus.COMMITTED);
         } catch(TimeoutException e) {
             Trace.error("Transaction " + id + " : thread timed out while requesting vote: " + e);
             abort = true;
-        } catch (InterruptedException e) { e.printStackTrace(); }
-        catch (ExecutionException e) {
+        } catch (InterruptedException e) {
+            e.printStackTrace();
+            abort = true;
+        } catch (ExecutionException e) {
             Trace.error("Transaction " + id + " : ExecutionException while waiting for RM - RM has aborted.");
-//            Trace.error(e.getCause().toString());
-//            e.printStackTrace();
             abort = true;
         }
 
@@ -166,13 +164,11 @@ public class TransactionManager {
         return abort;
     }
 
-    public boolean allDoCommitOrAbort(final int id, final boolean doCommit) {
+    public boolean allDoCommitOrAbort(final int id, final boolean doCommit, List<Integer> rms) {
         class PrayDoCommit implements Callable<String> {
-            private String rm;
-            private boolean decision;
-            public PrayDoCommit(String rm, boolean decision) {
+            private int rm;
+            public PrayDoCommit(int rm) {
                 this.rm = rm;
-                this.decision = decision;
             }
 
             @Override
@@ -188,60 +184,40 @@ public class TransactionManager {
         }
 
         // Abort CUSTOMER
-        if (doCommit)
-            mw.commitCustomer(id);
-        else
-            mw.abortCustomer(id);
+        if (rms.contains("customer")) {
+            if (doCommit)
+                mw.commitCustomer(id);
+            else
+                mw.abortCustomer(id);
+        }
+
+        // Collecting decisions
+        ExecutorService executor = Executors.newFixedThreadPool(rms.size());
+
+        List<Future<String>> futures = new ArrayList<>();
+        for (int rm : rms) {
+            futures.add(executor.submit(new PrayDoCommit(rm)));
+        }
 
         shouldCrash(id, "mw", "after having sent all decisions");
 
-        // Collecting decisions
-        ExecutorService executor = Executors.newFixedThreadPool(3);
-        Future<String> future1 = executor.submit(new PrayDoCommit("flight", doCommit));
-        Future<String> future2 = executor.submit(new PrayDoCommit("room", doCommit));
-        Future<String> future3 = executor.submit(new PrayDoCommit("car", doCommit));
-
         try {
-            try {
-                future1.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                //TODO log "FLIGHT COMMITTED"
-            } catch (TimeoutException e) {
-                Trace.error("Transaction " + id + " : flight RM timed out while requesting vote: " + e);
-
-                // Resend decision
-                Future<String> future = executor.submit(new PrayDoCommit("flight", doCommit));
-                try {
-                future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                } catch (TimeoutException e2) {
-                    Trace.error("Transaction " + id + " : RM flight didn't respond to second request.");
-                }
-            }
-            try {
-                future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                //TODO log "ROOM COMMITTED"
-            } catch (TimeoutException e) {
-                Trace.error("Transaction " + id + " : room RM timed out while requesting vote: " + e);
-
-                // Resend decision
-                Future<String> future = executor.submit(new PrayDoCommit("room", doCommit));
+            for (int i = 0; i < futures.size(); i++) {
+                Future<String> future = futures.get(i);
+                int rm = rms.get(i);
                 try {
                     future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                } catch (TimeoutException e2) {
-                    Trace.error("Transaction " + id + " : RM room didn't respond to second request.");
-                }
-            }
-            try {
-                future3.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                //TODO log "CAR COMMITED"
-            } catch (TimeoutException e) {
-                Trace.error("Transaction " + id + " : car RM timed out while requesting vote: " + e);
+                    //TODO log "FLIGHT COMMITTED"
+                } catch (TimeoutException e) {
+                    Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
 
-                // Resend decision
-                Future<String> future = executor.submit(new PrayDoCommit("car", doCommit));
-                try {
-                    future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                } catch (TimeoutException e2) {
-                    Trace.error("Transaction " + id + " : RM car didn't respond to second request.");
+                    // Resend decision
+                    Future<String> future2 = executor.submit(new PrayDoCommit(rm));
+                    try {
+                        future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    } catch (TimeoutException e2) {
+                        Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to second request.");
+                    }
                 }
             }
         } catch (InterruptedException e) {
@@ -281,10 +257,13 @@ public class TransactionManager {
 
             shouldCrash(id, "mw", "about to send vote requests");
 
+            Set<Integer> enlistedRMs = toCommit.getEnlistedRMs();
+            Trace.info("Transaction " + id + " : Starting 2PC with participants " + enlistedRMs);
+
             // Phase 1.
             // Check if we can still commit
             //TODO log "Start 2PC"
-            boolean vetoAbort = allShouldPrepare(id);
+            boolean vetoAbort = allShouldPrepare(id, enlistedRMs);
 
             shouldCrash(id, "mw", "about to send decision (decision is commit=" + !vetoAbort + ")");
 
@@ -293,7 +272,7 @@ public class TransactionManager {
             if (!vetoAbort) {
                 //TODO log "COMMIT"
                 Trace.info("every rm is prepared for commit. committing to all.");
-                allDoCommitOrAbort(id, true);
+                allDoCommitOrAbort(id, true, new ArrayList<>(enlistedRMs));
             } else {
                 //TODO commit "ABORT"
                 Trace.info("At least one RM has voted for abort. Aborting to all.");
@@ -317,9 +296,10 @@ public class TransactionManager {
         if (!this.activeTransactions.containsKey(id)) return false;
 
         Trace.info("Aborting transaction " + id);
-        allDoCommitOrAbort(id, false);  // send abort to all
 
         synchronized (activeTransactions) {
+            Transaction t = this.activeTransactions.get(id);
+            allDoCommitOrAbort(id, false, new ArrayList<>(t.getEnlistedRMs()));  // send abort to all
             this.activeTransactions.remove(id);
         }
         synchronized (expireTimeMap) {
@@ -328,6 +308,15 @@ public class TransactionManager {
 
         System.out.println("Aborted transaction: " + id);
         return true;
+    }
+
+    private void enlist(int transactionID, int rm) {
+        Trace.info("Enlisting RM " + rm);
+        if (rm == mw.CUSTOMER_INDEX) {
+            mw.startCustomer(transactionID);
+        } else {
+            mw.getProxy(rm).start(transactionID);
+        }
     }
 
     // Essential for tracking which locks to request.
@@ -340,6 +329,12 @@ public class TransactionManager {
             Transaction t = this.activeTransactions.get(transactionID);
             if (t != null) {
                 t.addOperation(op);
+
+                // if first time operation involves rm, start the transaction
+                int rm = op.getItem();
+                if (t.enlist(rm)) {
+                    enlist(transactionID, rm);
+                }
             }
         }
 
