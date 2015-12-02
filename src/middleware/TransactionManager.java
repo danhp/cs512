@@ -149,7 +149,7 @@ public class TransactionManager {
             }
             this.statusMap.put(id, TransactionStatus.COMMITTED);
         } catch(TimeoutException e) {
-            Trace.error("Transaction " + id + " : thread timed out while requesting vote: " + e);
+            Trace.error("Transaction " + id + " : thread timed out while requesting vote.");
             abort = true;
         } catch (InterruptedException e) {
             e.printStackTrace();
@@ -167,13 +167,27 @@ public class TransactionManager {
     public boolean allDoCommitOrAbort(final int id, final boolean doCommit, List<Integer> rms) {
         class PrayDoCommit implements Callable<String> {
             private int rm;
+            private boolean wait = false;
+
             public PrayDoCommit(int rm) {
                 this.rm = rm;
             }
 
+            public PrayDoCommit(int rm, boolean wait) {
+                this.rm = rm;
+                this.wait = wait;
+            }
+
             @Override
             public String call() throws Exception {
+                if (wait) {
+                    long waittime = COMMITTED_REQUEST_TIMEOUT/2;
+                    Trace.info("Waiting " + waittime + "s before sending decision again.");
+                    Thread.sleep(waittime*1000);
+                }
+
                 Trace.info("Transaction " + id + ": sending decision commit="+doCommit+ " to RM " + this.rm);
+
                 if (doCommit)
                     mw.getProxy(this.rm).doCommit(id);
                 else
@@ -201,31 +215,26 @@ public class TransactionManager {
 
         shouldCrash(id, "mw", "after having sent all decisions");
 
-        try {
-            for (int i = 0; i < futures.size(); i++) {
-                Future<String> future = futures.get(i);
-                int rm = rms.get(i);
-                try {
-                    future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                    //TODO log "FLIGHT COMMITTED"
-                } catch (TimeoutException e) {
-                    Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
+        for (int i = 0; i < futures.size(); i++) {
+            Future<String> future = futures.get(i);
+            int rm = rms.get(i);
+            try {
+                future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                //TODO log "FLIGHT COMMITTED"
+            } catch (Exception e) {
+                Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
 
+                while (true) {
                     // Resend decision
-                    Future<String> future2 = executor.submit(new PrayDoCommit(rm));
+                    Future<String> future2 = executor.submit(new PrayDoCommit(rm, true));
                     try {
                         future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                    } catch (TimeoutException e2) {
-                        Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to second request.");
+                        break;
+                    } catch (Exception e2) {
+                        Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to request.");
                     }
                 }
             }
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-        } catch (ExecutionException e) {
-            Trace.error("Transaction " + id + " : One of the RMs has aborted. Aborting all.");
-            Trace.error(e.getCause().toString());
-            e.printStackTrace();
         }
 
         executor.shutdown();
@@ -287,6 +296,7 @@ public class TransactionManager {
             this.expireTimeMap.remove(id);
 
             this.statusMap.put(id, TransactionStatus.DONE);
+            this.save();
 
             return true;
         }
@@ -307,6 +317,8 @@ public class TransactionManager {
         }
 
         System.out.println("Aborted transaction: " + id);
+        this.save();
+
         return true;
     }
 

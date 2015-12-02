@@ -163,13 +163,18 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
             // Else get data from database
             RMItem item = (RMItem) m_itemHT.get(key);
-            this.readSet.get(transactionID).put(key, item);
+
+            if (item != null) {
+                this.readSet.get(transactionID).put(key, item);
+            }
+
             return item;
         }
     }
 
     // Write a data item.
     private void writeData(int transactionID, String key, RMItem newValue, boolean commit) {
+
         synchronized(m_itemHT) {
             if (commit) {
                 m_itemHT.put(key, newValue);
@@ -181,6 +186,9 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 RMItem item = this.readSet.get(transactionID).get(key);
                 if (item == null) {
                     item = (RMItem) m_itemHT.get(key);
+                    if (item == null) {
+                        item = new NullClass();
+                    }
                     this.readSet.get(transactionID).put(key, item);
                 }
             }
@@ -221,6 +229,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     public void start(int transactionID) {
         Trace.info("Started transaction " + transactionID);
 
+        Trace.info(writeSet.toString());
+
         synchronized (writeSet) {
             if (writeSet.containsKey(transactionID)) return;
             writeSet.put(transactionID, new ConcurrentHashMap<String, RMItem>());
@@ -230,6 +240,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
 
         this.resetTimer(transactionID);
+        Trace.info(writeSet.toString());
     }
 
     @Override
@@ -242,7 +253,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) {
-                Trace.warn("Transaction " + transactionID + " does not exist. Ignoring.");
+                Trace.warn("Transaction " + transactionID + " does not exist (it probably has already committed). Ignoring.");
                 return;
             }
 
@@ -266,14 +277,17 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     @Override
     public void doAbort(int transactionID) {
-        Trace.info("Committing transaction " + transactionID);
+        Trace.info("Aborting transaction " + transactionID);
 
         this.expireTimeMap.remove(transactionID);
 
-        shouldCrash(transactionID, "received decision-abort", false);
+        shouldCrash(transactionID, "decision-abort", false);
 
         synchronized (this.writeSet) {
-            if (!writeSet.containsKey(transactionID)) return;
+            if (!writeSet.containsKey(transactionID)) {
+                Trace.warn("Transaction " + transactionID + " does not exist (it probably has already aborted). Ignoring.");
+                return;
+            }
             this.writeSet.remove(transactionID);
         }
         synchronized (this.readSet) {
@@ -297,25 +311,31 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (shouldCrash(transactionID, "do you want to choose the answer?", true)) {
                 if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
                     // send commit
+                    Trace.info("Transaction " + transactionID + ": sending commit");
                     this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
                     return;
                 } else {
                     // send abort
+                    Trace.info("Transaction " + transactionID + ": sending abort");
                     this.doAbort(transactionID);
                     this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                     throw new TransactionAbortedException();
                 }
             }
 
+            Trace.info(this.readSet.toString());
             for (Map.Entry<String, RMItem> entry : readSet.get(transactionID).entrySet()) {
 
                 synchronized (m_itemHT) {
                     RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
 
-                    if (inDatabase != null){
-                        if (inDatabase == entry.getValue())
+                    Trace.info(entry.getValue().getClass().toString());
+                    if (inDatabase != null || !(entry.getValue() instanceof  NullClass)) {
+                        if (inDatabase != entry.getValue()) {
+                            Trace.info("Transaction " + transactionID + ": sending abort");
                             this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                             throw new InvalidTransactionException();
+                        }
                     }
                 }
 
@@ -323,7 +343,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         }
         // Went through all the entries and they match.
 
+        Trace.info("Transaction " + transactionID + ": sending commit");
+
         this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
+
+        this.save();
     }
 
     @Override
@@ -661,4 +685,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("Resetting timer of transaction " + id);
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
     }
+
+    class NullClass extends RMItem { }
 }

@@ -1,9 +1,11 @@
 package server;
 
+import java.io.Serializable;
+
 /**
  * Created by justindomingue on 2015-11-06.
  */
-public class Operation {
+public class Operation implements Serializable {
     private String key;
     private RMItem item;
     private int type;       //0-overwrite, 1-delete, 2-write new
