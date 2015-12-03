@@ -7,6 +7,7 @@ import utils.Constants;
 import utils.Constants.TransactionStatus;
 import utils.Storage;
 
+import java.io.IOException;
 import java.util.*;
 import java.util.concurrent.*;
 
@@ -32,7 +33,7 @@ public class TransactionManager {
         // Recover if a file is found.
         try {
             TMData data = (TMData) Storage.get(Constants.TMANAGER_FILE);
-            System.out.println("Recovering from file");
+            System.out.println("Recovering TM from file");
             this.transactions = data.getTransactionCount();
             this.activeTransactions = data.getActiveTransactions();
             this.expireTimeMap = data.getExpireTimes();
@@ -40,7 +41,8 @@ public class TransactionManager {
 
             this.recover();
 
-        } catch(Exception e) {
+        } catch(ClassNotFoundException | IOException e) {
+            System.out.println(e);
             System.out.println("File either not found or corrupted\nStarting new Trans Man");
             this.transactions = 0;
             this.activeTransactions = new ConcurrentHashMap<>();
@@ -69,16 +71,20 @@ public class TransactionManager {
     private void recover() {
         Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
         for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
-            // No decision reached before the crash.
-            if (entry.getValue() == TransactionStatus.ACTIVE) {
+            // No decision reached before the crash or decided to abort.
+            if (entry.getValue() == TransactionStatus.ACTIVE || entry.getValue() == TransactionStatus.ABORTED) {
                 // send abort to all
-                this.allDoCommitOrAbort(entry.getKey(), false, new ArrayList<>());  //TODO save enlisted RMs
+                System.out.println("Resuming with abort of: " + entry.getKey());
+                this.allDoCommitOrAbort(entry.getKey(), false, new ArrayList<>(activeTransactions.get(entry.getKey()).getEnlistedRMs()));  //TODO save enlisted RMs
+                this.statusMap.put(entry.getKey(), TransactionStatus.DONE);
                 continue;
             }
 
             // Decision of committing was reached before crash
             if (entry.getValue() == TransactionStatus.COMMITTED) {
-                this.allDoCommitOrAbort(entry.getKey(), true, new ArrayList<>());   // TODO save enlisted RMs
+                System.out.println("Resuming commit of: " + entry.getKey());
+                this.allDoCommitOrAbort(entry.getKey(), true, new ArrayList<>(activeTransactions.get(entry.getKey()).getEnlistedRMs()));   // TODO save enlisted RMs
+                this.statusMap.put(entry.getKey(), TransactionStatus.DONE);
                 continue;
             }
 
@@ -206,38 +212,40 @@ public class TransactionManager {
         }
 
         // Collecting decisions
-        ExecutorService executor = Executors.newFixedThreadPool(rms.size());
+        if (rms.size() > 0) {
+            ExecutorService executor = Executors.newFixedThreadPool(rms.size());
 
-        List<Future<String>> futures = new ArrayList<>();
-        for (int rm : rms) {
-            futures.add(executor.submit(new PrayDoCommit(rm)));
-        }
+            List<Future<String>> futures = new ArrayList<>();
+            for (int rm : rms) {
+                futures.add(executor.submit(new PrayDoCommit(rm)));
+            }
 
-        shouldCrash(id, "mw", "after having sent all decisions");
+            shouldCrash(id, "mw", "after having sent all decisions");
 
-        for (int i = 0; i < futures.size(); i++) {
-            Future<String> future = futures.get(i);
-            int rm = rms.get(i);
-            try {
-                future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                //TODO log "FLIGHT COMMITTED"
-            } catch (Exception e) {
-                Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
+            for (int i = 0; i < futures.size(); i++) {
+                Future<String> future = futures.get(i);
+                int rm = rms.get(i);
+                try {
+                    future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                    //TODO log "FLIGHT COMMITTED"
+                } catch (Exception e) {
+                    Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
 
-                while (true) {
-                    // Resend decision
-                    Future<String> future2 = executor.submit(new PrayDoCommit(rm, true));
-                    try {
-                        future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                        break;
-                    } catch (Exception e2) {
-                        Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to request.");
+                    while (true) {
+                        // Resend decision
+                        Future<String> future2 = executor.submit(new PrayDoCommit(rm, true));
+                        try {
+                            future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                            break;
+                        } catch (Exception e2) {
+                            Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to request.");
+                        }
                     }
                 }
             }
-        }
 
-        executor.shutdown();
+            executor.shutdown();
+        }
 
         return true;
     }
@@ -270,8 +278,8 @@ public class TransactionManager {
             Trace.info("Transaction " + id + " : Starting 2PC with participants " + enlistedRMs);
 
             // Phase 1.
-            // Check if we can still commit
-            //TODO log "Start 2PC"
+            // Check if we can still commita
+            this.statusMap.put(id, TransactionStatus.ACTIVE);
             boolean vetoAbort = allShouldPrepare(id, enlistedRMs);
 
             shouldCrash(id, "mw", "about to send decision (decision is commit=" + !vetoAbort + ")");
@@ -279,12 +287,12 @@ public class TransactionManager {
             // Phase 2.
             // Execute all the operations
             if (!vetoAbort) {
-                //TODO log "COMMIT"
                 Trace.info("every rm is prepared for commit. committing to all.");
+                this.statusMap.put(id, TransactionStatus.COMMITTED);
                 allDoCommitOrAbort(id, true, new ArrayList<>(enlistedRMs));
             } else {
-                //TODO commit "ABORT"
                 Trace.info("At least one RM has voted for abort. Aborting to all.");
+                this.statusMap.put(id, TransactionStatus.ABORTED);
                 this.abort(id);
             }
 
