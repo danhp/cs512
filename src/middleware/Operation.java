@@ -2,10 +2,9 @@ package middleware;
 
 import server.RMItem;
 
-/**
- * Created by justindomingue on 2015-11-06.
- */
-public class Operation {
+import java.io.Serializable;
+
+public class Operation implements Serializable{
     private String key;
     private int itemType;
     private int type;       //0-overwrite, 1-delete, 2-write 3-read

@@ -2,9 +2,6 @@ package server;
 
 import java.io.Serializable;
 
-/**
- * Created by justindomingue on 2015-11-06.
- */
 public class Operation implements Serializable {
     private String key;
     private RMItem item;

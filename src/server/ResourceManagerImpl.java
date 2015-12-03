@@ -102,6 +102,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         } catch (Exception e) {
             System.out.println(e);
             System.out.println("Failed to write to: " + this.getFilePath());
+            return;
         }
 
         try {
@@ -110,6 +111,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         } catch (Exception e) {
             System.out.println(e);
             System.out.println("Failed to write to: " + this.filePtr);
+            return;
         }
 
         // All is good with the world
@@ -686,5 +688,5 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
     }
 
-    class NullClass extends RMItem { }
+    class NullClass extends RMItem {}
 }
