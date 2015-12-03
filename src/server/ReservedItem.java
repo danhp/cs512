@@ -63,4 +63,8 @@ public class ReservedItem extends RMItem {
         return s.toLowerCase();
     }
 
+    public ReservedItem getClone() {
+        return new ReservedItem(this.m_strReservableItemKey, this.m_strLocation, this.m_nCount, this.m_nPrice);
+    }
+
 }
