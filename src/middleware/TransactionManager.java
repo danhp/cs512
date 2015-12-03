@@ -42,7 +42,6 @@ public class TransactionManager {
             this.recover();
 
         } catch(ClassNotFoundException | IOException e) {
-            e.printStackTrace();
             System.out.println("File either not found or corrupted\nStarting new Trans Man");
             this.transactions = 0;
             this.activeTransactions = new ConcurrentHashMap<>();
@@ -101,10 +100,7 @@ public class TransactionManager {
         this.activeTransactions.put(id, newTransaction);
 
         // start at rms will be triggered later when rm is requested
-//        mw.getCarProxy().start(id);
-//        mw.getFlightProxy().start(id);
-//        mw.getRoomProxy().start(id);
-//        mw.startCustomer(id);
+        mw.startCustomer(id);
 
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         this.statusMap.put(id, TransactionStatus.ACTIVE);
@@ -196,7 +192,7 @@ public class TransactionManager {
                     Thread.sleep(waittime*1000);
                 }
 
-                Trace.info("Transaction " + id + ": sending decision commit="+doCommit+ " to RM " + this.rm);
+                Trace.info("Transaction " + id + ": sending decision commit=" + doCommit + " to RM " + this.rm);
 
                 if (doCommit)
                     mw.getProxy(this.rm).doCommit(id);
@@ -333,6 +329,8 @@ public class TransactionManager {
             this.expireTimeMap.remove(id);
         }
 
+        this.mw.abortCustomer(id);
+
         System.out.println("Aborted transaction: " + id);
         this.save();
 
@@ -365,8 +363,12 @@ public class TransactionManager {
 
                 // if first time operation involves rm, start the transaction
                 int rm = op.getItem();
-                if (t.enlist(rm)) {
+                if (rm == mw.CUSTOMER_INDEX) {
                     enlist(transactionID, rm);
+                } else {
+                    if (t.enlist(rm)) {
+                        enlist(transactionID, rm);
+                    }
                 }
             }
         }
