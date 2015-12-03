@@ -9,7 +9,7 @@ import java.util.Set;
 public class Transaction implements Serializable {
     private int id;
     private List<Operation> history = new ArrayList<Operation>();
-    private Set<Integer> enlistedRMs = new HashSet<>();
+    private List<Integer> enlistedRMs = new ArrayList<Integer>();
 
     public Transaction(int id) {
         this.id = id;
@@ -26,7 +26,7 @@ public class Transaction implements Serializable {
     public int getId() { return this.id; }
 
     public boolean enlist(int index) { return this.enlistedRMs.add(index); }
-    public Set<Integer> getEnlistedRMs() { return this.enlistedRMs; }
+    public List<Integer> getEnlistedRMs() { return this.enlistedRMs; }
 
     public boolean equals(Transaction transaction) {
         return this.id == transaction.id;
