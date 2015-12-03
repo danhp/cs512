@@ -71,16 +71,20 @@ public class TransactionManager {
     private void recover() {
         Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
         for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
-            // No decision reached before the crash.
-            if (entry.getValue() == TransactionStatus.ACTIVE) {
+            // No decision reached before the crash or decided to abort.
+            if (entry.getValue() == TransactionStatus.ACTIVE || entry.getValue() == TransactionStatus.ABORTED) {
                 // send abort to all
-                this.allDoCommitOrAbort(entry.getKey(), false, activeTransactions.get(entry.getKey()).getEnlistedRMs());  //TODO save enlisted RMs
+                System.out.println("Resuming with abort of: " + entry.getKey());
+                this.allDoCommitOrAbort(entry.getKey(), false, new ArrayList<>(activeTransactions.get(entry.getKey()).getEnlistedRMs()));  //TODO save enlisted RMs
+                this.statusMap.put(entry.getKey(), TransactionStatus.DONE);
                 continue;
             }
 
             // Decision of committing was reached before crash
             if (entry.getValue() == TransactionStatus.COMMITTED) {
-                this.allDoCommitOrAbort(entry.getKey(), true, activeTransactions.get(entry.getKey()).getEnlistedRMs());   // TODO save enlisted RMs
+                System.out.println("Resuming commit of: " + entry.getKey());
+                this.allDoCommitOrAbort(entry.getKey(), true, new ArrayList<>(activeTransactions.get(entry.getKey()).getEnlistedRMs()));   // TODO save enlisted RMs
+                this.statusMap.put(entry.getKey(), TransactionStatus.DONE);
                 continue;
             }
 
@@ -121,7 +125,7 @@ public class TransactionManager {
             mw.crash(which);
     }
 
-    private boolean allShouldPrepare(final int id, List<Integer> rms) {
+    private boolean allShouldPrepare(final int id, Set<Integer> rms) {
         class PrepareYourself implements Callable<String> {
             private int rm;
             public PrepareYourself(int rm) {
@@ -270,12 +274,12 @@ public class TransactionManager {
 
             shouldCrash(id, "mw", "about to send vote requests");
 
-            List<Integer> enlistedRMs = toCommit.getEnlistedRMs();
+            Set<Integer> enlistedRMs = toCommit.getEnlistedRMs();
             Trace.info("Transaction " + id + " : Starting 2PC with participants " + enlistedRMs);
 
             // Phase 1.
-            // Check if we can still commit
-            //TODO log "Start 2PC"
+            // Check if we can still commita
+            this.statusMap.put(id, TransactionStatus.ACTIVE);
             boolean vetoAbort = allShouldPrepare(id, enlistedRMs);
 
             shouldCrash(id, "mw", "about to send decision (decision is commit=" + !vetoAbort + ")");
@@ -283,12 +287,12 @@ public class TransactionManager {
             // Phase 2.
             // Execute all the operations
             if (!vetoAbort) {
-                //TODO log "COMMIT"
                 Trace.info("every rm is prepared for commit. committing to all.");
+                this.statusMap.put(id, TransactionStatus.COMMITTED);
                 allDoCommitOrAbort(id, true, new ArrayList<>(enlistedRMs));
             } else {
-                //TODO commit "ABORT"
                 Trace.info("At least one RM has voted for abort. Aborting to all.");
+                this.statusMap.put(id, TransactionStatus.ABORTED);
                 this.abort(id);
             }
 
