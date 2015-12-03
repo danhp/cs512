@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 
-    private static long TRANSACTION_TIMEOUT = 6000;    // used to handle VOTE-REQ timeouts
+    private static long TRANSACTION_TIMEOUT = 60000;    // used to handle VOTE-REQ timeouts
     private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
     protected RMHashtable m_itemHT = new RMHashtable();

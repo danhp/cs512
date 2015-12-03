@@ -14,7 +14,7 @@ import java.util.concurrent.*;
 public class TransactionManager {
 
     // 1 min timeout
-    private static long TRANSACTION_TIMEOUT = 6000;
+    private static long TRANSACTION_TIMEOUT = 60000;
     private static long VOTE_REQUEST_TIMEOUT = 10;  //10 seconds
     private static long COMMITTED_REQUEST_TIMEOUT = 10;  //10 seconds
 
@@ -125,7 +125,8 @@ public class TransactionManager {
             mw.crash(which);
     }
 
-    private boolean allShouldPrepare(final int id, Set<Integer> rms) {
+    // Ask every RM to prepare - returns a list of RMs that aborted, or empty list
+    private List<Integer> allShouldPrepare(final int id, List<Integer> rms) {
         class PrepareYourself implements Callable<String> {
             private int rm;
             public PrepareYourself(int rm) {
@@ -139,6 +140,8 @@ public class TransactionManager {
             }
         }
 
+        List<Integer> abortedRMs = new ArrayList<>();
+
         ExecutorService executor = Executors.newFixedThreadPool(rms.size());
         List<Future<String>> futures = new ArrayList<>();
         for (int rm : rms) {
@@ -147,27 +150,28 @@ public class TransactionManager {
 
         shouldCrash(id, "mw", "about to receive vote requests");
 
-        boolean abort = false;
-        try {
-            // Get all futures
-            for (Future<String> future : futures) {
+        // Collect the answers
+        for (int i = 0; i < futures.size(); i++) {
+            Future<String> future = futures.get(i);
+            int rm = rms.get(i);
+            try {
                 future.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
+                this.statusMap.put(id, TransactionStatus.COMMITTED);
+                this.save();
+            } catch (TimeoutException e) {
+                Trace.error("Transaction " + id + " : RM " + rm + " timed out while requesting vote.");
+                abortedRMs.add(rm);
+            } catch (ExecutionException e) {
+                Trace.error("Transaction " + id + " : ExecutionException while waiting for RM " + rm + " - RM has aborted.");
+                abortedRMs.add(rm);
+            } catch (InterruptedException e) {
+                e.printStackTrace();
             }
-            this.statusMap.put(id, TransactionStatus.COMMITTED);
-        } catch(TimeoutException e) {
-            Trace.error("Transaction " + id + " : thread timed out while requesting vote.");
-            abort = true;
-        } catch (InterruptedException e) {
-            e.printStackTrace();
-            abort = true;
-        } catch (ExecutionException e) {
-            Trace.error("Transaction " + id + " : ExecutionException while waiting for RM - RM has aborted.");
-            abort = true;
         }
 
         executor.shutdown();
 
-        return abort;
+        return abortedRMs;
     }
 
     public boolean allDoCommitOrAbort(final int id, final boolean doCommit, List<Integer> rms) {
@@ -280,20 +284,22 @@ public class TransactionManager {
             // Phase 1.
             // Check if we can still commita
             this.statusMap.put(id, TransactionStatus.ACTIVE);
-            boolean vetoAbort = allShouldPrepare(id, enlistedRMs);
 
-            shouldCrash(id, "mw", "about to send decision (decision is commit=" + !vetoAbort + ")");
+            List<Integer> abortedRMs = allShouldPrepare(id, new ArrayList<>(enlistedRMs));
+            boolean allPreparedToCommit = abortedRMs.isEmpty();
+
+            shouldCrash(id, "mw", "about to send decision (decision is commit=" + allPreparedToCommit + ")");
 
             // Phase 2.
             // Execute all the operations
-            if (!vetoAbort) {
+            if (allPreparedToCommit) {
                 Trace.info("every rm is prepared for commit. committing to all.");
                 this.statusMap.put(id, TransactionStatus.COMMITTED);
                 allDoCommitOrAbort(id, true, new ArrayList<>(enlistedRMs));
             } else {
                 Trace.info("At least one RM has voted for abort. Aborting to all.");
                 this.statusMap.put(id, TransactionStatus.ABORTED);
-                this.abort(id);
+                this.abort(id, abortedRMs);
             }
 
             // Unlock everything
@@ -310,14 +316,17 @@ public class TransactionManager {
         }
     }
 
-    public boolean abort(int id) {
+    public boolean abort(int id, List<Integer> toIgnore) {
         if (!this.activeTransactions.containsKey(id)) return false;
 
         Trace.info("Aborting transaction " + id);
 
         synchronized (activeTransactions) {
             Transaction t = this.activeTransactions.get(id);
-            allDoCommitOrAbort(id, false, new ArrayList<>(t.getEnlistedRMs()));  // send abort to all
+            List<Integer> toContact = new ArrayList<>(t.getEnlistedRMs());
+            toContact.removeAll(toIgnore);
+
+            allDoCommitOrAbort(id, false, toContact);  // send abort to all
             this.activeTransactions.remove(id);
         }
         synchronized (expireTimeMap) {
@@ -328,6 +337,10 @@ public class TransactionManager {
         this.save();
 
         return true;
+    }
+
+    public boolean abort(int id) {
+        return abort(id, new ArrayList<Integer>());
     }
 
     private void enlist(int transactionID, int rm) {
