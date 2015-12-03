@@ -337,7 +337,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 synchronized (m_itemHT) {
                     RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
 
-                    Trace.info(entry.getValue().getClass().toString());
                     if (inDatabase != null || !(entry.getValue() instanceof  NullClass)) {
                         if (inDatabase != entry.getValue()) {
                             Trace.info("Transaction " + transactionID + ": sending abort");
