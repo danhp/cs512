@@ -22,7 +22,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     private static int ROOM_INDEX = 2;
     public static int CUSTOMER_INDEX = 3;
 
-    private TransactionManager tm = new TransactionManager(this);
+    private TransactionManager tm;
 
     // Customer data
     protected RMHashtable customerHT;
@@ -37,6 +37,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         int[] ports = {4000,4001,4002};
 
         setupProxies(hosts, ports);
+
+        tm = new TransactionManager(this);
 
         // Recover the customer info if found
         try {

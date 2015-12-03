@@ -70,6 +70,9 @@ public class TransactionManager {
 
     private void recover() {
         Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
+
+        Trace.info("Recovering following transactions: " + copy);
+
         for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
             // No decision reached before the crash or decided to abort.
             if (entry.getValue() == TransactionStatus.ACTIVE || entry.getValue() == TransactionStatus.ABORTED) {
@@ -109,7 +112,7 @@ public class TransactionManager {
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         this.statusMap.put(id, TransactionStatus.ACTIVE);
 
-        this.save();
+//        this.save();
 
         System.out.println("Started transaction with new ID: " + id);
         return id;
@@ -233,17 +236,15 @@ public class TransactionManager {
                     future.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
                     //TODO log "FLIGHT COMMITTED"
                 } catch (Exception e) {
-                    Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote: " + e);
+                    Trace.error("Transaction " + id + " : " + rm + " RM timed out while requesting vote.");
 
-                    while (true) {
-                        // Resend decision
-                        Future<String> future2 = executor.submit(new PrayDoCommit(rm, true));
-                        try {
-                            future2.get(COMMITTED_REQUEST_TIMEOUT, TimeUnit.SECONDS);
-                            break;
-                        } catch (Exception e2) {
-                            Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to request.");
-                        }
+                    // Resend decision
+                    Future<String> future2 = executor.submit(new PrayDoCommit(rm, true));
+                    try {
+                        future2.get(COMMITTED_REQUEST_TIMEOUT*2, TimeUnit.SECONDS);
+                        break;
+                    } catch (Exception e2) {
+                        Trace.error("Transaction " + id + " : RM " + rm + " didn't respond to request.");
                     }
                 }
             }
@@ -282,7 +283,7 @@ public class TransactionManager {
             Trace.info("Transaction " + id + " : Starting 2PC with participants " + enlistedRMs);
 
             // Phase 1.
-            // Check if we can still commita
+            // Check if we can still commit
             this.statusMap.put(id, TransactionStatus.ACTIVE);
 
             List<Integer> abortedRMs = allShouldPrepare(id, new ArrayList<>(enlistedRMs));

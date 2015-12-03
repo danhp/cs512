@@ -128,26 +128,30 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
     private void recover() {
         Map<Integer, TransactionStatus> copy = new HashMap<>(this.statusMap);
+        Trace.info("Recovering following transactions: " + copy);
         for (Map.Entry<Integer, TransactionStatus> entry : copy.entrySet()) {
 
             // Transaction had not yet voted.
             if (entry.getValue() == TransactionStatus.ACTIVE) {
+                Trace.info("Transaction " + entry.getKey() + " was active - Aborting");
                 this.doAbort(entry.getKey());
                 continue;
             }
 
             // Transaction waiting for instructions
             if (entry.getValue() == TransactionStatus.UNKNOWN) {
-                // just wait?
+                Trace.info("Transaction " + entry.getKey() + " was uncertain - Waiting");
                 continue;
             }
 
             // Commited, send the info if asked for it
             if (entry.getValue() == TransactionStatus.COMMITTED) {
-                // just wait?
+                Trace.info("Transaction " + entry.getKey() + " was committed - Waiting");
                 continue;
             }
         }
+
+        this.save();
     }
 
     // Basic operations on RMItem //
