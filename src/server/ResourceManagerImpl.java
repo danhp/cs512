@@ -18,7 +18,7 @@ import java.util.concurrent.ConcurrentHashMap;
 @WebService(endpointInterface = "server.ws.ResourceManager")
 public class ResourceManagerImpl implements server.ws.ResourceManager {
 
-    private static long TRANSACTION_TIMEOUT = 60000/2;    // used to handle VOTE-REQ timeouts
+    private static long TRANSACTION_TIMEOUT = 6000;    // used to handle VOTE-REQ timeouts
     private Map<Integer, Long> expireTimeMap = new ConcurrentHashMap<>();
 
     protected RMHashtable m_itemHT = new RMHashtable();
@@ -312,13 +312,19 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 if (shouldCrash(transactionID, "should I send commit or abort?", true)) {
                     // send commit
                     Trace.info("Transaction " + transactionID + ": sending commit");
+
                     this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
+                    this.save();
+
                     return;
                 } else {
                     // send abort
                     Trace.info("Transaction " + transactionID + ": sending abort");
+
                     this.doAbort(transactionID);
                     this.statusMap.put(transactionID, TransactionStatus.ABORTED);
+                    this.save();
+
                     throw new TransactionAbortedException();
                 }
             }
@@ -333,12 +339,15 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     if (inDatabase != null || !(entry.getValue() instanceof  NullClass)) {
                         if (inDatabase != entry.getValue()) {
                             Trace.info("Transaction " + transactionID + ": sending abort");
+
+                            this.doAbort(transactionID);
                             this.statusMap.put(transactionID, TransactionStatus.ABORTED);
+                            this.save();
+
                             throw new InvalidTransactionException();
                         }
                     }
                 }
-
             }
         }
         // Went through all the entries and they match.
@@ -346,7 +355,6 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("Transaction " + transactionID + ": sending commit");
 
         this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
-
         this.save();
     }
 

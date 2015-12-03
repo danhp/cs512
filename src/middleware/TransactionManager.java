@@ -13,7 +13,7 @@ import java.util.concurrent.*;
 public class TransactionManager {
 
     // 1 min timeout
-    private static long TRANSACTION_TIMEOUT = 6000000;
+    private static long TRANSACTION_TIMEOUT = 6000;
     private static long VOTE_REQUEST_TIMEOUT = 10;  //10 seconds
     private static long COMMITTED_REQUEST_TIMEOUT = 10;  //10 seconds
 
