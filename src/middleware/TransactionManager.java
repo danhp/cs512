@@ -42,7 +42,7 @@ public class TransactionManager {
             this.recover();
 
         } catch(ClassNotFoundException | IOException e) {
-            System.out.println(e);
+            e.printStackTrace();
             System.out.println("File either not found or corrupted\nStarting new Trans Man");
             this.transactions = 0;
             this.activeTransactions = new ConcurrentHashMap<>();
