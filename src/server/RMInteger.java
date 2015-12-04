@@ -30,4 +30,7 @@ public class RMInteger extends RMItem implements Serializable {
         return String.valueOf(m_value);
     }
 
+    public RMInteger getClone() {
+        return new RMInteger(m_value);
+    }
 }

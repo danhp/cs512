@@ -169,12 +169,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
             // Else get data from database
             RMItem item = (RMItem) m_itemHT.get(key);
+            RMItem clone = null;
 
             if (item != null) {
-                this.readSet.get(transactionID).put(key, item);
+                clone = item.getClone();
+                this.readSet.get(transactionID).put(key, clone);
             }
 
-            return item;
+            return clone;
         }
     }
 
@@ -707,4 +709,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
     }
 }
 
-class NullClass extends RMItem {}
+class NullClass extends RMItem {
+    public NullClass getClone() {
+        return new NullClass();
+    }
+}
