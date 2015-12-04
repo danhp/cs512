@@ -215,6 +215,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
     // CUSTOMER TRANSACTIONS HELPERS
     public void startCustomer(int transactionID) {
+        Trace.info("[CUSTOMER] Transaction " + transactionID + " starting customer.");
         synchronized (this.writeSet) {
             if (writeSet.containsKey(transactionID)) return;
             writeSet.put(transactionID, new HashMap<String, RMItem>());
@@ -225,6 +226,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
     public void commitCustomer(int transactionID) {
+        Trace.info("[CUSTOMER] Transaction " + transactionID + " committing customer.");
         synchronized (writeSet) {
             if (!writeSet.containsKey(transactionID)) return;
 
@@ -245,6 +247,7 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
     }
 
     public void abortCustomer(int transactionID) {
+        Trace.info("[CUSTOMER] Transaction " + transactionID + " aborting customer.");
         synchronized (this.writeSet) {
             if (writeSet.containsKey(transactionID)) {
                 this.writeSet.remove(transactionID);
@@ -500,6 +503,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), CUSTOMER_INDEX, 2))) return false;
 
+        tm.enlist(id, FLIGHT_INDEX);
+
         boolean reserved = getFlightProxy().reserveFlight(id, customerId, flightNumber);
 
         if (!reserved) {
@@ -526,6 +531,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), CUSTOMER_INDEX, 2))) return false;
 
+        tm.enlist(id, CAR_INDEX);
+
         boolean reserved = getCarProxy().reserveCar(id, customerId, location);
 
         if (!reserved) {
@@ -551,6 +558,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
 
         // Save to request locks later
         if (!this.tm.addOperation(id, new Operation(Integer.toString(customerId), CUSTOMER_INDEX, 2))) return false;
+
+        tm.enlist(id, ROOM_INDEX);
 
         boolean reserved = getRoomProxy().reserveRoom(id, customerId, location);
 

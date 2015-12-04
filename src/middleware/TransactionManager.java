@@ -154,6 +154,9 @@ public class TransactionManager {
             for (int i = 0; i < futures.size(); i++) {
                 Future<String> future = futures.get(i);
                 int rm = rms.get(i);
+
+                if (rm == mw.CUSTOMER_INDEX) continue;
+
                 try {
                     future.get(VOTE_REQUEST_TIMEOUT, TimeUnit.SECONDS);
                 } catch (TimeoutException e) {
@@ -197,21 +200,20 @@ public class TransactionManager {
 
                 Trace.info("Transaction " + id + ": sending decision commit=" + doCommit + " to RM " + this.rm);
 
-                if (doCommit)
-                    mw.getProxy(this.rm).doCommit(id);
-                else
-                    mw.getProxy(this.rm).doAbort(id);
+                if (doCommit) {
+                    if (this.rm == mw.CUSTOMER_INDEX)
+                        mw.commitCustomer(id);
+                    else
+                        mw.getProxy(this.rm).doCommit(id);
+                } else {
+                    if (this.rm == mw.CUSTOMER_INDEX)
+                        mw.abortCustomer(id);
+                    else
+                        mw.getProxy(this.rm).doAbort(id);
+                }
 
                 return this.rm + " has committed!";
             }
-        }
-
-        // Abort CUSTOMER
-        if (rms.contains("customer")) {
-            if (doCommit)
-                mw.commitCustomer(id);
-            else
-                mw.abortCustomer(id);
         }
 
         // Collecting decisions
@@ -310,7 +312,7 @@ public class TransactionManager {
             this.statusMap.put(id, TransactionStatus.DONE);
             this.save();
 
-            return true;
+            return allPreparedToCommit;
         }
     }
 
@@ -331,9 +333,6 @@ public class TransactionManager {
             this.expireTimeMap.remove(id);
         }
 
-        this.mw.abortCustomer(id);
-
-        System.out.println("Aborted transaction: " + id);
         this.save();
 
         return true;
@@ -343,12 +342,21 @@ public class TransactionManager {
         return abort(id, new ArrayList<Integer>());
     }
 
-    private void enlist(int transactionID, int rm) {
+    private void startRM(int transactionID, int rm) {
         Trace.info("Enlisting RM " + rm);
         if (rm == mw.CUSTOMER_INDEX) {
             mw.startCustomer(transactionID);
         } else {
             mw.getProxy(rm).start(transactionID);
+        }
+    }
+
+    public void enlist(int id, int rm) {
+        synchronized (activeTransactions) {
+            Transaction t = this.activeTransactions.get(id);
+            if (t.enlist(rm)) {
+                startRM(id, rm);
+            }
         }
     }
 
@@ -365,12 +373,8 @@ public class TransactionManager {
 
                 // if first time operation involves rm, start the transaction
                 int rm = op.getItem();
-                if (rm == mw.CUSTOMER_INDEX) {
-                    enlist(transactionID, rm);
-                } else {
-                    if (t.enlist(rm)) {
-                        enlist(transactionID, rm);
-                    }
+                if (t.enlist(rm)) {
+                    startRM(transactionID, rm);
                 }
             }
         }
