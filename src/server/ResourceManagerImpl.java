@@ -278,6 +278,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         this.save();
 
+        Trace.info("Transaction " + transactionID + ": status set to COMMITTED");
         this.statusMap.put(transactionID, TransactionStatus.COMMITTED);
     }
 
@@ -300,6 +301,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.readSet.remove(transactionID);
         }
 
+        Trace.info("Transaction " + transactionID + ": status set to ABORTED");
         this.statusMap.put(transactionID, TransactionStatus.ABORTED);
     }
 
@@ -319,6 +321,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     // send commit
                     Trace.info("Transaction " + transactionID + ": sending commit");
 
+                    Trace.info("Transaction " + transactionID + ": status set to UNKNOWN");
                     this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
                     this.save();
 
@@ -327,6 +330,7 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                     // send abort
                     Trace.info("Transaction " + transactionID + ": sending abort");
 
+                    Trace.info("Transaction " + transactionID + ": status set to ABORTED");
                     this.doAbort(transactionID);
                     this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                     this.save();
@@ -345,11 +349,12 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                         if (inDatabase != entry.getValue()) {
                             Trace.info("Transaction " + transactionID + ": sending abort");
 
+                            Trace.info("Transaction " + transactionID + ": status set to ABORTED");
                             this.doAbort(transactionID);
                             this.statusMap.put(transactionID, TransactionStatus.ABORTED);
                             this.save();
 
-                            throw new InvalidTransactionException();
+                            throw new TransactionAbortedException();
                         }
                     }
                 }
@@ -360,6 +365,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
         Trace.info("Transaction " + transactionID + ": sending commit");
 
         this.statusMap.put(transactionID, TransactionStatus.UNKNOWN);
+        Trace.info("Transaction " + transactionID + ": status set to UNKNOWN");
+
         this.save();
     }
 

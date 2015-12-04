@@ -222,7 +222,6 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized (this.readSet) {
             readSet.put(transactionID, new HashMap<String, RMItem>());
         }
-        this.save();
     }
 
     public void commitCustomer(int transactionID) {
@@ -253,6 +252,8 @@ public class MiddleWareImpl implements middleware.ws.MiddleWare {
         synchronized (this.readSet) {
             this.readSet.remove(transactionID);
         }
+
+        this.save();
     }
 
     // TRANSACTIONS
