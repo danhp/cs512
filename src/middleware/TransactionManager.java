@@ -271,8 +271,6 @@ public class TransactionManager {
                 }
             }
 
-            shouldCrash(id, "mw", "about to send vote requests");
-
             Set<Integer> enlistedRMs = toCommit.getEnlistedRMs();
             Trace.info("Transaction " + id + " : Starting 2PC with participants " + enlistedRMs);
 
@@ -280,6 +278,8 @@ public class TransactionManager {
             // Check if we can still commit
             this.statusMap.put(id, TransactionStatus.ACTIVE);
             this.save();
+
+            shouldCrash(id, "mw", "about to send vote requests");
 
             List<Integer> abortedRMs = allShouldPrepare(id, new ArrayList<>(enlistedRMs));
             boolean allPreparedToCommit = abortedRMs.isEmpty();
