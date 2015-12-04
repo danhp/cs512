@@ -135,19 +135,16 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (entry.getValue() == TransactionStatus.ACTIVE) {
                 Trace.info("Transaction " + entry.getKey() + " was active - Aborting");
                 this.doAbort(entry.getKey());
-                continue;
             }
 
             // Transaction waiting for instructions
-            if (entry.getValue() == TransactionStatus.UNKNOWN) {
+            else if (entry.getValue() == TransactionStatus.UNKNOWN) {
                 Trace.info("Transaction " + entry.getKey() + " was uncertain - Waiting");
-                continue;
             }
 
-            // Commited, send the info if asked for it
-            if (entry.getValue() == TransactionStatus.COMMITTED) {
+            // Committed, send the info if asked for it
+            else if (entry.getValue() == TransactionStatus.COMMITTED) {
                 Trace.info("Transaction " + entry.getKey() + " was committed - Waiting");
-                continue;
             }
         }
 
@@ -164,8 +161,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 return writeSet.get(transactionID).get(key);
 
             // Check the readSet
-            if (readSet.get(transactionID).containsKey(key))
-                return readSet.get(transactionID).get(key);
+            if (readSet.get(transactionID).containsKey(key)) {
+                RMItem item = readSet.get(transactionID).get(key);
+                RMItem clone = item.getClone();
+                return clone;
+            }
 
             // Else get data from database
             RMItem item = (RMItem) m_itemHT.get(key);
@@ -174,9 +174,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             if (item != null) {
                 clone = item.getClone();
                 this.readSet.get(transactionID).put(key, clone);
+                return clone.getClone();
             }
 
-            return clone;
+            return null;
         }
     }
 
@@ -194,10 +195,14 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
                 RMItem item = this.readSet.get(transactionID).get(key);
                 if (item == null) {
                     item = (RMItem) m_itemHT.get(key);
+                    RMItem clone;
                     if (item == null) {
                         item = new NullClass();
+                        clone = item;
+                    } else {
+                        clone = item.getClone();
                     }
-                    this.readSet.get(transactionID).put(key, item);
+                    this.readSet.get(transactionID).put(key, clone);
                 }
             }
         }
@@ -303,6 +308,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             this.readSet.remove(transactionID);
         }
 
+        this.save();
+
         Trace.info("Transaction " + transactionID + ": status set to ABORTED");
         this.statusMap.put(transactionID, TransactionStatus.ABORTED);
     }
@@ -346,9 +353,11 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
                 synchronized (m_itemHT) {
                     RMItem inDatabase = (RMItem) m_itemHT.get(entry.getKey());
+                    System.out.println("ENTRY " + entry);
 
                     if (inDatabase != null || !(entry.getValue() instanceof  NullClass)) {
-                        if (inDatabase != entry.getValue()) {
+                        System.out.println("INDB " + inDatabase + (inDatabase.equals(entry.getValue())));
+                        if (!inDatabase.equals(entry.getValue())) {
                             Trace.info("Transaction " + transactionID + ": sending abort");
 
                             Trace.info("Transaction " + transactionID + ": status set to ABORTED");
@@ -462,6 +471,8 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
             // Decrease the number of available items in the storage.
             item.setCount(item.getCount() - 1);
             item.setReserved(item.getReserved() + 1);
+
+            writeData(id, item.getKey(), item, false);
 
             Trace.warn("RM::reserveItem(" + id + ", " + customerId + ", "
                     + key + ", " + location + ") OK.");

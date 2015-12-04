@@ -108,8 +108,6 @@ public class TransactionManager {
         this.expireTimeMap.put(id, System.currentTimeMillis() + TRANSACTION_TIMEOUT);
         this.statusMap.put(id, TransactionStatus.ACTIVE);
 
-//        this.save();
-
         System.out.println("Started transaction with new ID: " + id);
         return id;
     }
@@ -281,6 +279,7 @@ public class TransactionManager {
             // Phase 1.
             // Check if we can still commit
             this.statusMap.put(id, TransactionStatus.ACTIVE);
+            this.save();
 
             List<Integer> abortedRMs = allShouldPrepare(id, new ArrayList<>(enlistedRMs));
             boolean allPreparedToCommit = abortedRMs.isEmpty();
