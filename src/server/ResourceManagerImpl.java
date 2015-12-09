@@ -283,10 +283,10 @@ public class ResourceManagerImpl implements server.ws.ResourceManager {
 
         this.readSet.remove(transactionID);
 
-        this.save();
 
         Trace.info("Transaction " + transactionID + ": status set to COMMITTED");
         this.statusMap.put(transactionID, TransactionStatus.COMMITTED);
+        this.save();
     }
 
     @Override

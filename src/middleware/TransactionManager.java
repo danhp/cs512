@@ -282,6 +282,9 @@ public class TransactionManager {
             shouldCrash(id, "mw", "about to send vote requests");
 
             List<Integer> abortedRMs = allShouldPrepare(id, new ArrayList<>(enlistedRMs));
+
+            shouldCrash(id, "mw", "received all votes, but haven't made a decision");
+
             boolean allPreparedToCommit = abortedRMs.isEmpty();
             TransactionStatus status = allPreparedToCommit ? TransactionStatus.COMMITTED : TransactionStatus.ABORTED;
 
